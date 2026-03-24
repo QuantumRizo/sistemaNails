@@ -1,0 +1,143 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { supabase } from '../lib/supabase'
+import type { Cita, BloqueoAgenda } from '../types/database'
+
+// ─── Weekly citas (for agenda) ────────────────────────────────
+export function useCitasSemana(inicioSemana: string, finSemana: string, sucursalId: string) {
+  return useQuery<Cita[]>({
+    queryKey: ['citas', inicioSemana, finSemana, sucursalId],
+    queryFn: async () => {
+      let query = supabase
+        .from('citas')
+        .select(`
+          *,
+          cliente:clientes(*),
+          empleada:perfiles_empleadas(*),
+          sucursal:sucursales(*),
+          cita_servicios(servicio_id, servicios(*))
+        `)
+        .gte('fecha', inicioSemana)
+        .lte('fecha', finSemana)
+
+      if (sucursalId !== 'todas') {
+        query = query.eq('sucursal_id', sucursalId)
+      }
+
+      const { data, error } = await query
+      if (error) throw error
+      return (data ?? []).map((c: any) => ({
+        ...c,
+        servicios: c.cita_servicios?.map((cs: any) => cs.servicios) ?? [],
+      }))
+    },
+    enabled: !!inicioSemana && !!finSemana && !!sucursalId,
+  })
+}
+
+// ─── Weekly bloqueos ──────────────────────────────────────────
+export function useBloqueosSemana(inicioSemana: string, finSemana: string) {
+  return useQuery<BloqueoAgenda[]>({
+    queryKey: ['bloqueos', inicioSemana, finSemana],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('bloqueos_agenda')
+        .select('*')
+        .gte('fecha', inicioSemana)
+        .lte('fecha', finSemana)
+      if (error) throw error
+      return data ?? []
+    },
+    enabled: !!inicioSemana && !!finSemana,
+  })
+}
+
+// ─── Create cita ──────────────────────────────────────────────
+export function useCrearCita() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      cita,
+      servicioIds,
+    }: {
+      cita: Omit<Cita, 'id' | 'created_at' | 'cliente' | 'empleada' | 'servicios'>
+      servicioIds: string[]
+    }) => {
+      const { data, error } = await supabase.from('citas').insert(cita).select().single()
+      if (error) throw error
+      if (servicioIds.length) {
+        const { error: e2 } = await supabase
+          .from('cita_servicios')
+          .insert(servicioIds.map((sid) => ({ cita_id: data.id, servicio_id: sid })))
+        if (e2) throw e2
+      }
+      return data
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['citas'] }) },
+  })
+}
+
+// ─── Update cita ──────────────────────────────────────────────
+export function useActualizarCita() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, updates, servicioIds }: { id: string; updates: Partial<Cita>; servicioIds?: string[] }) => {
+      const { data, error } = await supabase
+        .from('citas').update(updates).eq('id', id).select().single()
+      if (error) throw error
+
+      if (servicioIds) {
+        // Sync services
+        await supabase.from('cita_servicios').delete().eq('cita_id', id)
+        if (servicioIds.length) {
+          const { error: e2 } = await supabase
+            .from('cita_servicios')
+            .insert(servicioIds.map((sid) => ({ cita_id: id, servicio_id: sid })))
+          if (e2) throw e2
+        }
+      }
+      return data
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['citas'] }) },
+  })
+}
+
+// ─── Delete cita ──────────────────────────────────────────────
+export function useEliminarCita() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('citas').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['citas'] }) },
+  })
+}
+
+// ─── Create Multiple Bloqueos ─────────────────────────────────
+export function useCrearBloqueos() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (bloqueos: Omit<BloqueoAgenda, 'id'>[]) => {
+      const { data, error } = await supabase.from('bloqueos_agenda').insert(bloqueos).select()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['bloqueos'] })
+    },
+  })
+}
+
+// ─── Delete Bloqueo ───────────────────────────────────────────
+export function useEliminarBloqueo() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('bloqueos_agenda').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['bloqueos'] })
+    },
+  })
+}

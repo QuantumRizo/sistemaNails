@@ -1,0 +1,212 @@
+import { useState } from 'react'
+import { startOfWeek, addDays, addWeeks, subWeeks, format } from 'date-fns'
+import { es } from 'date-fns/locale'
+import { ChevronLeft, ChevronRight, Calendar, CalendarPlus, X } from 'lucide-react'
+import AgendaGrid from '../components/Agenda/AgendaGrid'
+import BuscadorModal from '../components/Clientes/BuscadorModal'
+import FormularioCliente from '../components/Clientes/FormularioCliente'
+import NuevaCitaModal from '../components/Citas/NuevaCitaModal'
+import GestionCitaModal from '../components/Citas/GestionCitaModal'
+import BloqueoModal from '../components/Agenda/BloqueoModal'
+import BloqueoInfoModal from '../components/Agenda/BloqueoInfoModal'
+import { useSucursales } from '../hooks/useSucursales'
+import { useEmpleadas } from '../hooks/useEmpleadas'
+import { useCitasSemana, useBloqueosSemana, useEliminarBloqueo } from '../hooks/useCitas'
+import type { Cliente, Cita, SlotInfo, BloqueoAgenda } from '../types/database'
+
+type Modal =
+  | { type: 'none' }
+  | { type: 'buscar';       slot: SlotInfo }
+  | { type: 'nuevo-cliente'; slot: SlotInfo }
+  | { type: 'nueva-cita';   slot: SlotInfo; cliente: Cliente }
+  | { type: 'gestion';      cita: Cita }
+  | { type: 'bloquear' }
+  | { type: 'bloqueo-info'; bloqueo: BloqueoAgenda }
+
+function getWeekDates(weekStart: Date): Date[] {
+  return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+}
+
+interface Props {
+  preselectedCliente?: Cliente | null
+  onClearPreselected?: () => void
+}
+
+export default function AgendaPage({ preselectedCliente, onClearPreselected }: Props) {
+  const [weekStart, setWeekStart] = useState(() =>
+    startOfWeek(new Date(), { weekStartsOn: 1 })
+  )
+  const [sucursalId, setSucursalId] = useState<string>('')
+  const [modal, setModal] = useState<Modal>({ type: 'none' })
+
+  const { data: sucursales = [] } = useSucursales()
+  const eliminarBloqueo = useEliminarBloqueo()
+
+  // Default to first sucursal when they load
+  if (!sucursalId && sucursales.length > 0) {
+    setSucursalId(sucursales[0].id)
+  }
+
+  const weekDates   = getWeekDates(weekStart)
+  const inicioStr   = format(weekDates[0], 'yyyy-MM-dd')
+  const finStr      = format(weekDates[6], 'yyyy-MM-dd')
+  const weekLabel   = `${format(weekDates[0], 'd MMM', { locale: es })} – ${format(weekDates[6], 'd MMM yyyy', { locale: es })}`
+
+  const activeSucursal            = sucursalId
+  const { data: empleadas = [] }  = useEmpleadas()
+  const { data: citas = [] }      = useCitasSemana(inicioStr, finStr, activeSucursal)
+  const { data: bloqueos = [] }   = useBloqueosSemana(inicioStr, finStr)
+
+  const prevWeek  = () => setWeekStart((w) => subWeeks(w, 1))
+  const nextWeek  = () => setWeekStart((w) => addWeeks(w, 1))
+  const thisWeek  = () => setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))
+
+  const handleSlotClick = (empleadaId: string, hora: string, fecha: string) => {
+    if (preselectedCliente) {
+      setModal({ type: 'nueva-cita', slot: { empleadaId, hora, fecha }, cliente: preselectedCliente })
+      onClearPreselected?.()
+    } else {
+      setModal({ type: 'buscar', slot: { empleadaId, hora, fecha } })
+    }
+  }
+
+  const handleClienteSelect = (cliente: Cliente) => {
+    if (modal.type !== 'buscar') return
+    setModal({ type: 'nueva-cita', slot: modal.slot, cliente })
+  }
+
+  const handleNuevoCliente = () => {
+    if (modal.type !== 'buscar') return
+    setModal({ type: 'nuevo-cliente', slot: modal.slot })
+  }
+
+  const handleClienteCreado = (cliente: Cliente) => {
+    if (modal.type !== 'nuevo-cliente') return
+    setModal({ type: 'nueva-cita', slot: modal.slot, cliente })
+  }
+
+  const closeModal = () => setModal({ type: 'none' })
+
+  const handleDeleteBloqueo = async (id: string) => {
+    if (!confirm('¿Deseas eliminar este bloqueo?')) return
+    try {
+      await eliminarBloqueo.mutateAsync(id)
+    } catch (err) {
+      alert('Error al eliminar bloqueo')
+    }
+  }
+
+  return (
+    <div className="agenda-page-wrap">
+      {/* Preselected Client Notice */}
+      {preselectedCliente && (
+        <div style={{ background: 'var(--accent)', color: '#fff', padding: '8px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13, fontWeight: 500 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <CalendarPlus size={16} />
+            <span>Agendando cita para: <strong>{preselectedCliente.nombre_completo}</strong></span>
+          </div>
+          <button 
+            onClick={onClearPreselected}
+            style={{ padding: 4, background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: 4, cursor: 'pointer', color: '#fff' }}
+            title="Cancelar selección"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* ── Topbar ───────────────────────────────────────────── */}
+      <div className="page-topbar">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span className="topbar-title">Agenda semanal</span>
+          <button 
+            className="btn-primary" 
+            style={{ padding: '6px 12px', fontSize: 12 }}
+            onClick={() => setModal({ type: 'bloquear' })}
+          >
+            Bloquear Horario
+          </button>
+        </div>
+
+        <div className="topbar-controls">
+          {/* Sucursal */}
+          <select
+            value={activeSucursal}
+            onChange={(e) => setSucursalId(e.target.value)}
+            className="sucursal-select"
+          >
+            {sucursales.map((s) => (
+              <option key={s.id} value={s.id}>{s.nombre}</option>
+            ))}
+          </select>
+
+          {/* Week nav */}
+          <div className="date-nav">
+            <button onClick={prevWeek}  className="date-nav-btn"><ChevronLeft size={16} /></button>
+            <button onClick={thisWeek}  className="date-nav-today">
+              <Calendar size={13} /> Hoy
+            </button>
+            <span className="date-nav-label">{weekLabel}</span>
+            <button onClick={nextWeek}  className="date-nav-btn"><ChevronRight size={16} /></button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Grid ─────────────────────────────────────────────── */}
+      <AgendaGrid
+        weekDates={weekDates}
+        empleadas={empleadas}
+        citas={citas}
+        bloqueos={bloqueos}
+        onSlotClick={handleSlotClick}
+        onCitaClick={(c) => setModal({ type: 'gestion', cita: c })}
+        onBloqueoClick={(b) => setModal({ type: 'bloqueo-info', bloqueo: b })}
+      />
+
+      {/* ── Modals ───────────────────────────────────────────── */}
+      {modal.type === 'buscar' && (
+        <BuscadorModal
+          onSelect={handleClienteSelect}
+          onNuevoCliente={handleNuevoCliente}
+          onClose={closeModal}
+        />
+      )}
+      {modal.type === 'nuevo-cliente' && (
+        <FormularioCliente
+          onCreated={(cliente) => {
+            if (cliente) handleClienteCreado(cliente)
+          }}
+          onClose={closeModal}
+        />
+      )}
+      {modal.type === 'nueva-cita' && (
+        <NuevaCitaModal
+          cliente={modal.cliente}
+          empleadaId={modal.slot.empleadaId}
+          horaInicio={modal.slot.hora}
+          fecha={modal.slot.fecha}
+          sucursalId={activeSucursal}
+          onClose={closeModal}
+          onCreated={closeModal}
+        />
+      )}
+      {modal.type === 'gestion' && (
+        <GestionCitaModal cita={modal.cita} onClose={closeModal} />
+      )}
+      {modal.type === 'bloquear' && (
+        <BloqueoModal
+          empleadas={empleadas}
+          onClose={closeModal}
+        />
+      )}
+      {modal.type === 'bloqueo-info' && (
+        <BloqueoInfoModal
+          bloqueo={modal.bloqueo}
+          empleadas={empleadas}
+          onClose={closeModal}
+          onDelete={handleDeleteBloqueo}
+        />
+      )}
+    </div>
+  )
+}

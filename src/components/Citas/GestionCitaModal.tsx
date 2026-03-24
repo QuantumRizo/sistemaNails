@@ -1,0 +1,285 @@
+import { useState, useMemo } from 'react'
+import { X, Check, Trash2, Search, Calendar, Clock, MapPin, Phone, MessageCircle, Move, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useActualizarCita } from '../../hooks/useCitas'
+import { useServicios } from '../../hooks/useServicios'
+import { useTodasEmpleadas } from '../../hooks/useEmpleadas'
+import type { Cita, CitaStatus, Servicio } from '../../types/database'
+
+interface Props {
+  cita: Cita
+  onClose: () => void
+}
+
+export default function GestionCitaModal({ cita, onClose }: Props) {
+  const actualizar = useActualizarCita()
+  const { data: servicios = [] } = useServicios()
+  const { data: empleadas = [] } = useTodasEmpleadas()
+  
+  const [selected, setSelected] = useState<string[]>((cita.servicios ?? []).map(s => s.id))
+  const [search, setSearch] = useState('')
+  const [comentarios, setComentarios] = useState(cita.comentarios || '')
+  const [empleadaId, setEmpleadaId] = useState(cita.empleada_id || '')
+  const [saving, setSaving] = useState(false)
+  
+  // Modules management
+  const [manualSlots, setManualSlots] = useState<number | null>(cita.duracion_manual_slots)
+
+  const toggleServicio = (id: string) =>
+    setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))
+
+  const serviciosSeleccionados = useMemo(() => 
+    servicios.filter((s) => selected.includes(s.id)),
+  [servicios, selected])
+
+  const autoSlots = serviciosSeleccionados.reduce((sum, s) => sum + s.duracion_slots, 0)
+  const effectiveSlots = manualSlots ?? autoSlots
+  const totalMin = effectiveSlots * 15
+
+  const filteredServices = useMemo(() => {
+    const s = search.toLowerCase().trim()
+    if (!s) return servicios
+    return servicios.filter(item => 
+      item.nombre.toLowerCase().includes(s) || 
+      item.familia?.toLowerCase().includes(s)
+    )
+  }, [servicios, search])
+
+  const groups = useMemo(() => {
+    return filteredServices.reduce<Record<string, Servicio[]>>((acc, s) => {
+      const fam = s.familia ?? 'Otros'
+      acc[fam] = acc[fam] ? [...acc[fam], s] : [s]
+      return acc
+    }, {})
+  }, [filteredServices])
+
+  const handleUpdate = async (extraUpdates: any = {}) => {
+    if (!empleadaId) return
+    setSaving(true)
+    await actualizar.mutateAsync({
+      id: cita.id,
+      updates: {
+        empleada_id: empleadaId,
+        comentarios: comentarios || null,
+        duracion_manual_slots: manualSlots,
+        ...extraUpdates
+      },
+      servicioIds: selected
+    })
+    setSaving(false)
+    onClose()
+  }
+
+  const handleStatus = (estado: CitaStatus) => {
+    if (confirm(`¿Cambiar estado a ${estado}?`)) {
+      handleUpdate({ estado })
+    }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-box modal-lg-split" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2 className="modal-title">Gestión de Cita</h2>
+          <button onClick={onClose} className="btn-ghost" style={{ padding: 4 }}><X size={20} /></button>
+        </div>
+
+        <div className="modal-split-body" style={{ height: 600 }}>
+          {/* LEFT: CART & ACTIONS */}
+          <div className="modal-side-cart" style={{ width: 340 }}>
+            <div className="cart-header">
+              <div className="cart-client-name">{cita.cliente?.nombre_completo || '—'}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div className="cart-client-phone">
+                  <Phone size={13} /> {cita.cliente?.telefono_cel || 'Sin tel'}
+                </div>
+                {cita.cliente?.telefono_cel && (
+                  <a 
+                    href={`https://wa.me/52${cita.cliente.telefono_cel}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="btn-whatsapp"
+                  >
+                    <MessageCircle size={12} /> WhatsApp
+                  </a>
+                )}
+              </div>
+            </div>
+
+            <div style={{ padding: '12px 20px', fontSize: 11, color: 'var(--text-2)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Calendar size={13} color="var(--text-3)" /> <span>{cita.fecha}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Clock size={13} color="var(--text-3)" /> <span>{cita.bloque_inicio}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <MapPin size={13} color="var(--text-3)" /> <span>{cita.sucursal?.nombre || 'Sucursal'}</span>
+              </div>
+            </div>
+
+            <div className="cart-items-list">
+              {serviciosSeleccionados.length === 0 ? (
+                <div style={{ textAlign: 'center', color: 'var(--text-3)', fontSize: 11, marginTop: 40 }}>
+                  No hay servicios seleccionados
+                </div>
+              ) : (
+                serviciosSeleccionados.map(s => (
+                  <div key={s.id} className="cart-item">
+                    <div className="cart-item-info">
+                      <div className="cart-item-name">{s.nombre}</div>
+                      <div className="cart-item-meta">{s.duracion_slots * 15} min · ${s.precio}</div>
+                    </div>
+                    <button type="button" onClick={() => toggleServicio(s.id)} className="cart-item-remove">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Quick Actions Grid */}
+            <div className="action-grid">
+              <button className="btn-action-gray" title="Mover cita"><Move size={15} /> Mover</button>
+              <button 
+                className="btn-action-gray" 
+                onClick={() => handleStatus('Cancelada')}
+                style={{ color: 'var(--danger)' }}
+              >
+                <Trash2 size={15} /> Cancelar
+              </button>
+              <button className="btn-action-gray" onClick={() => handleStatus('No asistió')}>No asistió</button>
+              <button className="btn-action-gray" onClick={() => {
+                const note = prompt('Añadir/Editar comentario:', comentarios)
+                if (note !== null) setComentarios(note)
+              }}>
+                <MessageSquare size={15} /> Notas
+              </button>
+              
+              <button 
+                className={`btn-action-validate ${cita.estado === 'Finalizada' ? 'validated' : ''}`}
+                onClick={() => handleStatus('Finalizada')}
+                disabled={saving}
+              >
+                <Check size={18} /> {cita.estado === 'Finalizada' ? 'Cita Validada' : 'Validar Cita'}
+              </button>
+            </div>
+          </div>
+
+          {/* RIGHT: EDITING */}
+          <div className="modal-side-selection">
+            <div className="selection-search-wrap">
+              <div style={{ position: 'relative', width: '100%' }}>
+                <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)' }} />
+                <input 
+                  type="text"
+                  placeholder="Buscar servicio..."
+                  className="selection-search-input"
+                  style={{ paddingLeft: 38 }}
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div style={{ padding: '0 20px 15px', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)', minWidth: 80 }}>Profesional:</span>
+              <select 
+                className="form-input" 
+                style={{ fontSize: 13, flex: 1, height: 36, padding: '0 12px' }}
+                value={empleadaId || ''} 
+                onChange={e => setEmpleadaId(e.target.value)}
+              >
+                <option value="">Elegir profesional...</option>
+                {empleadas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+              </select>
+            </div>
+
+            <div className="selection-services-list">
+              {Object.entries(groups).map(([familia, items]) => (
+                <div key={familia} style={{ marginBottom: 20 }}>
+                  <div className="servicio-familia" style={{ marginBottom: 8 }}>{familia}</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {items.map(s => {
+                      const isAdded = selected.includes(s.id)
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => toggleServicio(s.id)}
+                          className={`servicio-btn ${isAdded ? 'active' : ''}`}
+                          style={{ padding: '10px 14px' }}
+                        >
+                          <div className="servicio-btn-inner">
+                            <span style={{ fontSize: 13 }}>{s.nombre}</span>
+                            <span className="servicio-precio" style={{ fontWeight: 600 }}>${s.precio}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span className="servicio-dur">{s.duracion_slots * 15} min</span>
+                            {isAdded && <Check size={14} className="servicio-check" style={{ position: 'static', transform: 'none' }} />}
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="cart-summary-footer" style={{ borderTop: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 13, color: 'var(--text-3)' }}>Módulos:</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <button 
+                        type="button" 
+                        className="btn-ghost" 
+                        style={{ padding: 2 }}
+                        onClick={() => setManualSlots(Math.max(1, (manualSlots ?? autoSlots) - 1))}
+                      >
+                        <ChevronLeft size={16} color="var(--accent)" />
+                      </button>
+                      <span style={{ fontSize: 15, fontWeight: 700, minWidth: 20, textAlign: 'center' }}>
+                        {manualSlots ?? autoSlots}
+                      </span>
+                      <button 
+                        type="button" 
+                        className="btn-ghost" 
+                        style={{ padding: 2 }}
+                        onClick={() => setManualSlots((manualSlots ?? autoSlots) + 1)}
+                      >
+                        <ChevronRight size={16} color="var(--accent)" />
+                      </button>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 13 }}>
+                    <span style={{ color: 'var(--text-3)' }}>Duración:</span> <b>{totalMin} min</b>
+                  </div>
+                  {manualSlots !== null && (
+                     <button 
+                       onClick={() => setManualSlots(null)} 
+                       style={{ fontSize: 10, color: 'var(--accent)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+                     >
+                       Restablecer
+                     </button>
+                   )}
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="button" onClick={onClose} className="btn-ghost">Salir</button>
+                  <button 
+                    type="button" 
+                    onClick={() => handleUpdate()} 
+                    disabled={saving || !selected.length || !empleadaId} 
+                    className="btn-primary"
+                  >
+                    {saving ? 'Guardando...' : 'Guardar Cambios'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
