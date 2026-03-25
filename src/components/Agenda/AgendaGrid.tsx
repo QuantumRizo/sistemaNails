@@ -1,7 +1,8 @@
 import { useRef, useCallback, useState, useEffect } from 'react'
 import { format, isToday } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { CheckCircle2 } from 'lucide-react'
+import { CheckCircle2, User, Phone, ClipboardList, CalendarX } from 'lucide-react'
+
 import type { Cita, BloqueoAgenda, Empleada } from '../../types/database'
 
 // ─── Constants (Base) ──────────────────────────────────────────
@@ -60,6 +61,11 @@ export default function AgendaGrid({
   const [slotHeight, setSlotHeight] = useState(16)
   const [colWidth, setColWidth] = useState(30)
 
+  // ─── Tooltip State ──────────────────────────────────────────
+  const [hoveredCita, setHoveredCita] = useState<Cita | null>(null)
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
+
+
   useEffect(() => {
     const updateDimensions = () => {
       const w = window.innerWidth
@@ -92,11 +98,11 @@ export default function AgendaGrid({
     const fechaStr = format(date, 'yyyy-MM-dd')
     return citas.filter((c) => 
       c.empleada_id === empId && 
-      c.fecha === fechaStr && 
-      c.estado !== 'Cancelada' && 
-      c.estado !== 'No asistió'
+      c.fecha === fechaStr
+      // We don't filter by status here anymore, the UI will decide how to render based on status
     )
   }
+
 
   // Helper: get bloqueos for a specific employee + date
   const getBloqueos = (empId: string, date: Date) => {
@@ -150,8 +156,11 @@ export default function AgendaGrid({
                         key={emp.id}
                         className="emp-header-cell"
                         style={{ width: colWidth }}
+                        title={emp.nombre}
                       >
-                        {emp.nombre_corto || emp.nombre.substring(0, 3)}
+                        {emp.nombre.substring(0, 3).toUpperCase()}
+
+
                       </div>
                     ))}
                   </div>
@@ -222,20 +231,51 @@ export default function AgendaGrid({
 
                         {/* Citas */}
                         {empCitas.map((cita) => {
-                          const totalSlots = (cita.duracion_manual_slots ?? (cita.servicios ?? []).reduce(
-                            (sum, s) => sum + s.duracion_slots, 0
-                          )) || 4
                           const startSlot  = timeToSlot(cita.bloque_inicio)
-                          const isFinalizada = cita.estado === 'Finalizada'
                           const isCancelada  = cita.estado === 'Cancelada' || cita.estado === 'No asistió'
-                          const bgColor     = isCancelada ? '#fef2f2' : 'var(--accent)'
-                          const borderColor = isCancelada ? '#dc2626' : 'var(--accent)'
+                          
+                          if (isCancelada) {
+                            return (
+                              <div
+                                key={cita.id}
+                                className="cita-dot"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onCitaClick(cita);
+                                }}
+                                onMouseEnter={(e) => {
+                                  setHoveredCita(cita)
+                                  setMousePos({ x: e.clientX, y: e.clientY })
+                                }}
+                                onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
+                                onMouseLeave={() => setHoveredCita(null)}
+                                style={{
+                                  top: startSlot * slotHeight + (slotHeight / 2) - 4,
+                                  left: 2,
+                                }}
+                              />
+
+                            )
+                          }
+
+                          const totalSlots = (cita.duracion_manual_slots ?? (cita.servicios ?? []).reduce(
+                            (sum: number, s: any) => sum + s.duracion_slots, 0
+                          )) || 4
+                          const isFinalizada = cita.estado === 'Finalizada'
+                          const bgColor     = 'var(--accent)'
+                          const borderColor = 'var(--accent)'
 
                           return (
                             <div
                               key={cita.id}
                               className="cita-block"
                               onClick={() => onCitaClick(cita)}
+                              onMouseEnter={(e) => {
+                                setHoveredCita(cita)
+                                setMousePos({ x: e.clientX, y: e.clientY })
+                              }}
+                              onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
+                              onMouseLeave={() => setHoveredCita(null)}
                               style={{
                                 top: startSlot * slotHeight,
                                 height: Math.max(totalSlots * slotHeight, 24),
@@ -245,6 +285,7 @@ export default function AgendaGrid({
                                 opacity: 1,
                               }}
                             >
+
                               <div className="cita-block-inner">
                                 {isFinalizada && (
                                   <div style={{ display: 'flex', justifyContent: 'center', marginTop: 2 }}>
@@ -255,6 +296,7 @@ export default function AgendaGrid({
                             </div>
                           )
                         })}
+
                       </div>
                     )
                   })}
@@ -264,6 +306,56 @@ export default function AgendaGrid({
           </div>
         </div>
       </div>
+
+      {/* ── Custom Tooltip ──────────────────────────────────── */}
+      {hoveredCita && (
+        <div 
+          className="agenda-tooltip"
+          style={{ 
+            left: mousePos.x + 15, 
+            top: mousePos.y + 15,
+            visibility: mousePos.x === 0 ? 'hidden' : 'visible'
+          }}
+        >
+          {hoveredCita.estado === 'Cancelada' || hoveredCita.estado === 'No asistió' ? (
+            <div className="tooltip-cancel">
+              <div className="tooltip-header cancel">
+                <CalendarX size={16} />
+                <span>Visita no asistida</span>
+              </div>
+              <div className="tooltip-body">
+                <p>Cancelada por <b>Recepción</b> el {format(new Date(hoveredCita.fecha), 'dd/MM/yyyy')} a las {hoveredCita.bloque_inicio}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="tooltip-active">
+              <div className="tooltip-row">
+                <User size={16} />
+                <div className="tooltip-text">
+                  <span className="tooltip-main">{hoveredCita.cliente?.nombre_completo} ({hoveredCita.cliente?.num_cliente})</span>
+                  <span className="tooltip-sub"><Phone size={10} /> {hoveredCita.cliente?.telefono_cel || 'Sin teléfono'}</span>
+                </div>
+              </div>
+              <div className="tooltip-divider" />
+              <div className="tooltip-row">
+                <ClipboardList size={16} />
+                <div className="tooltip-text">
+                  <span className="tooltip-main color-accent">{(hoveredCita.servicios ?? []).map(s => s.nombre).join(', ')}</span>
+                  {hoveredCita.comentarios && <span className="tooltip-sub italic">{hoveredCita.comentarios}</span>}
+                </div>
+              </div>
+              <div className="tooltip-divider" />
+              <div className="tooltip-row">
+                <User size={16} className="color-prof" />
+                <div className="tooltip-text">
+                  <span className="tooltip-sub">Profesional: <b>{hoveredCita.empleada?.nombre}</b></span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
+

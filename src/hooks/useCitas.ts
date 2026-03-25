@@ -70,11 +70,29 @@ export function useCrearCita() {
           .insert(servicioIds.map((sid) => ({ cita_id: data.id, servicio_id: sid })))
         if (e2) throw e2
       }
+
+      // Auto-assign sucursal de origen al cliente si aún no tiene una
+      if (cita.cliente_id && cita.sucursal_id) {
+        const { data: cliente } = await supabase
+          .from('clientes')
+          .select('sucursal_id')
+          .eq('id', cita.cliente_id)
+          .single()
+        
+        if (cliente && !cliente.sucursal_id) {
+          await supabase
+            .from('clientes')
+            .update({ sucursal_id: cita.sucursal_id })
+            .eq('id', cita.cliente_id)
+        }
+      }
+
       return data
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['citas'] }) },
   })
 }
+
 
 // ─── Update cita ──────────────────────────────────────────────
 export function useActualizarCita() {
@@ -141,3 +159,30 @@ export function useEliminarBloqueo() {
     },
   })
 }
+
+// ─── Client history ───────────────────────────────────────────
+export function useCitasCliente(clienteId: string) {
+  return useQuery<Cita[]>({
+    queryKey: ['citas', 'cliente', clienteId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('citas')
+        .select(`
+          *,
+          empleada:perfiles_empleadas(*),
+          cita_servicios(servicio_id, servicios(*))
+        `)
+        .eq('cliente_id', clienteId)
+        .order('fecha', { ascending: false })
+        .limit(10)
+
+      if (error) throw error
+      return (data ?? []).map((c: any) => ({
+        ...c,
+        servicios: c.cita_servicios?.map((cs: any) => cs.servicios) ?? [],
+      }))
+    },
+    enabled: !!clienteId,
+  })
+}
+

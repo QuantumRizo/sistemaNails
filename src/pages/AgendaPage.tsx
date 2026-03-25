@@ -30,9 +30,12 @@ function getWeekDates(weekStart: Date): Date[] {
 interface Props {
   preselectedCliente?: Cliente | null
   onClearPreselected?: () => void
+  onValidarCita?: (cita: Cita) => void
 }
 
-export default function AgendaPage({ preselectedCliente, onClearPreselected }: Props) {
+
+export default function AgendaPage({ preselectedCliente, onClearPreselected, onValidarCita }: Props) {
+
   const [weekStart, setWeekStart] = useState(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 })
   )
@@ -116,19 +119,21 @@ export default function AgendaPage({ preselectedCliente, onClearPreselected }: P
       )}
 
       {/* ── Topbar ───────────────────────────────────────────── */}
-      <div className="page-topbar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <span className="topbar-title">Agenda semanal</span>
+      <div className="page-header" style={{ padding: '24px 24px 0', marginBottom: 24 }}>
+        <div className="page-header-content">
+          <h1 className="page-title">Agenda semanal</h1>
+          <p className="page-subtitle">Gestiona citas, bloqueos y disponibilidad por sucursal</p>
+        </div>
+
+        <div className="page-header-actions">
           <button 
             className="btn-primary" 
-            style={{ padding: '6px 12px', fontSize: 12 }}
+            style={{ padding: '8px 14px', fontSize: 13 }}
             onClick={() => setModal({ type: 'bloquear' })}
           >
             Bloquear Horario
           </button>
-        </div>
 
-        <div className="topbar-controls">
           {/* Sucursal */}
           <select
             value={activeSucursal}
@@ -191,8 +196,16 @@ export default function AgendaPage({ preselectedCliente, onClearPreselected }: P
         />
       )}
       {modal.type === 'gestion' && (
-        <GestionCitaModal cita={modal.cita} onClose={closeModal} />
+        <GestionCitaModal 
+          cita={modal.cita} 
+          onClose={closeModal} 
+          onValidar={() => {
+            closeModal()
+            onValidarCita?.(modal.cita)
+          }}
+        />
       )}
+
       {modal.type === 'bloquear' && (
         <BloqueoModal
           empleadas={empleadas}

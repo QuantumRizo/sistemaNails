@@ -8,9 +8,12 @@ import type { Cita, CitaStatus, Servicio } from '../../types/database'
 interface Props {
   cita: Cita
   onClose: () => void
+  onValidar?: () => void
 }
 
-export default function GestionCitaModal({ cita, onClose }: Props) {
+
+export default function GestionCitaModal({ cita, onClose, onValidar }: Props) {
+
   const actualizar = useActualizarCita()
   const { data: servicios = [] } = useServicios()
   const { data: empleadas = [] } = useTodasEmpleadas()
@@ -157,11 +160,12 @@ export default function GestionCitaModal({ cita, onClose }: Props) {
               
               <button 
                 className={`btn-action-validate ${cita.estado === 'Finalizada' ? 'validated' : ''}`}
-                onClick={() => handleStatus('Finalizada')}
+                onClick={() => onValidar ? onValidar() : handleStatus('Finalizada')}
                 disabled={saving}
               >
                 <Check size={18} /> {cita.estado === 'Finalizada' ? 'Cita Validada' : 'Validar Cita'}
               </button>
+
             </div>
           </div>
 

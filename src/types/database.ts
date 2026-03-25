@@ -2,6 +2,10 @@
 
 export type SexoType = 'Mujer' | 'Hombre' | 'Otro'
 export type CitaStatus = 'Programada' | 'En curso' | 'Finalizada' | 'Cancelada' | 'No asistió'
+export type TicketStatus = 'Pendiente' | 'Pagado' | 'Anulado'
+export type ItemTipo = 'Servicio' | 'Producto'
+export type MetodoPago = 'Efectivo' | 'Tarjeta' | 'Transferencia' | 'Puntos' | 'Bono' | 'Anticipo' | 'Aplazado' | 'Otros'
+
 
 export interface Sucursal {
   id: string
@@ -11,9 +15,10 @@ export interface Sucursal {
 export interface Empleada {
   id: string
   nombre: string
-  nombre_corto?: string
+  nombre_corto?: string // Deprecated
   activo: boolean
 }
+
 
 export interface DatosExtra {
   rfc?: string
@@ -30,9 +35,13 @@ export interface Cliente {
   nombre_completo: string
   telefono_cel: string | null
   email: string | null
+  sucursal_id: string | null  // Sucursal de origen/captación
   datos_extra: DatosExtra
   created_at: string
+  // Joined fields
+  sucursal?: Sucursal
 }
+
 
 export interface Servicio {
   id: string
@@ -42,6 +51,18 @@ export interface Servicio {
   familia: string | null
   activo: boolean
 }
+
+export interface Producto {
+  id: string
+  nombre: string
+  descripcion: string | null
+  precio: number
+  stock: number
+  sku: string | null
+  activo: boolean
+  created_at: string
+}
+
 
 export interface Cita {
   id: string
@@ -53,7 +74,9 @@ export interface Cita {
   estado: CitaStatus
   duracion_manual_slots: number | null
   comentarios: string | null
+  ticket_id: string | null
   created_at: string
+
   // Joined fields
   cliente?: Cliente
   empleada?: Empleada
@@ -76,6 +99,51 @@ export interface BloqueoAgenda {
   motivo: string
 }
 
+export interface Ticket {
+  id: string
+  sucursal_id: string
+  cliente_id: string | null
+  vendedor_id: string | null
+  num_ticket: string
+  fecha: string
+  base_imponible: number
+  iva: number
+  total: number
+  descuento: number
+  propina: number
+  estado: TicketStatus
+  created_at: string
+  // Joined fields
+  cliente?: Cliente
+  sucursal?: Sucursal
+  vendedor?: Empleada
+  items?: TicketItem[]
+  pagos?: Pago[]
+}
+
+export interface TicketItem {
+  id: string
+  ticket_id: string
+  tipo: ItemTipo
+  referencia_id: string
+  nombre: string
+  cantidad: number
+  precio_unitario: number
+  iva_porcentaje: number
+  descuento: number
+  total: number
+}
+
+export interface Pago {
+  id: string
+  ticket_id: string
+  metodo_pago: MetodoPago
+  importe: number
+  detalles: any
+  fecha: string
+}
+
+
 // ─── UI / App Types ────────────────────────────────────────────
 
 export interface SlotInfo {
@@ -90,11 +158,17 @@ export interface Database {
     Tables: {
       sucursales: { Row: Sucursal; Insert: Omit<Sucursal, 'id'>; Update: Partial<Sucursal> }
       perfiles_empleadas: { Row: Empleada; Insert: Omit<Empleada, 'id'>; Update: Partial<Empleada> }
-      clientes: { Row: Cliente; Insert: Omit<Cliente, 'id' | 'num_cliente' | 'created_at'>; Update: Partial<Cliente> }
+      clientes: { Row: Cliente; Insert: Omit<Cliente, 'id' | 'num_cliente' | 'created_at' | 'sucursal'>; Update: Partial<Cliente> }
+
       servicios: { Row: Servicio; Insert: Omit<Servicio, 'id'>; Update: Partial<Servicio> }
-      citas: { Row: Cita; Insert: Omit<Cita, 'id' | 'created_at' | 'cliente' | 'empleada' | 'servicios'>; Update: Partial<Cita> }
+      citas: { Row: Cita; Insert: Omit<Cita, 'id' | 'created_at' | 'cliente' | 'empleada' | 'sucursal' | 'servicios'>; Update: Partial<Cita> }
       cita_servicios: { Row: CitaServicio; Insert: Omit<CitaServicio, 'id'>; Update: Partial<CitaServicio> }
       bloqueos_agenda: { Row: BloqueoAgenda; Insert: Omit<BloqueoAgenda, 'id'>; Update: Partial<BloqueoAgenda> }
+      productos: { Row: Producto; Insert: Omit<Producto, 'id' | 'created_at'>; Update: Partial<Producto> }
+      tickets: { Row: Ticket; Insert: Omit<Ticket, 'id' | 'created_at' | 'cliente' | 'sucursal' | 'vendedor' | 'items' | 'pagos'>; Update: Partial<Ticket> }
+      ticket_items: { Row: TicketItem; Insert: Omit<TicketItem, 'id'>; Update: Partial<TicketItem> }
+      pagos: { Row: Pago; Insert: Omit<Pago, 'id' | 'fecha'>; Update: Partial<Pago> }
     }
   }
 }
+

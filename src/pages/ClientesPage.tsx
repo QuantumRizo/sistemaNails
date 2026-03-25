@@ -19,28 +19,27 @@ export default function ClientesPage({ onGoToAgenda }: Props) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       {/* Header */}
-      <div style={{ padding: '24px 20px 16px' }}>
-        <h1 style={{ fontSize: 22, fontWeight: 600, color: 'var(--text-1)', letterSpacing: '-0.5px' }}>
-          Buscador de clientes
-        </h1>
-      </div>
-
-      {/* Search bar */}
-      <div className="clientes-search-bar">
-        <div className="clientes-search-input-wrap">
-          <Search size={15} color="var(--text-3)" />
-          <input
-            autoFocus
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar por nombre, teléfono o ID..."
-            className="clientes-search-input"
-          />
+      <div className="page-header" style={{ padding: '24px 24px 0' }}>
+        <div className="page-header-content">
+          <h1 className="page-title">Buscador de clientes</h1>
+          <p className="page-subtitle">Encuentra o registra un nuevo perfil en el sistema</p>
         </div>
-        <button onClick={() => setShowForm(true)} className="btn-primary">
-          <UserPlus size={14} /> Nuevo cliente
-        </button>
+        <div className="page-header-actions">
+          <div className="clientes-search-input-wrap" style={{ width: '280px' }}>
+            <Search size={15} color="var(--text-3)" />
+            <input
+              autoFocus
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar por nombre, teléfono o ID..."
+              className="clientes-search-input"
+            />
+          </div>
+          <button onClick={() => setShowForm(true)} className="btn-primary">
+            <UserPlus size={14} /> Nuevo cliente
+          </button>
+        </div>
       </div>
 
       {/* Results Table */}

@@ -6,13 +6,15 @@ import { useQueryClient } from '@tanstack/react-query'
 import type { Empleada } from '../types/database'
 
 
-interface EmpleadaForm { id?: string; nombre: string; nombre_corto: string }
+interface EmpleadaForm { id?: string; nombre: string }
+
 
 export default function ProfesionalesPage() {
   const qc = useQueryClient()
   const { data: empleadas = [], isLoading } = useTodasEmpleadas()
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState<EmpleadaForm>({ nombre: '', nombre_corto: '' })
+  const [form, setForm] = useState<EmpleadaForm>({ nombre: '' })
+
   const [editingId, setEditingId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -26,35 +28,37 @@ export default function ProfesionalesPage() {
         .from('perfiles_empleadas')
         .update({
           nombre: form.nombre.trim(),
-          nombre_corto: form.nombre_corto.trim().substring(0, 3) || null,
         })
         .eq('id', editingId)
     } else {
       await supabase.from('perfiles_empleadas').insert({
         nombre: form.nombre.trim(),
-        nombre_corto: form.nombre_corto.trim().substring(0, 3) || null,
         activo: true,
       })
     }
 
+
     qc.invalidateQueries({ queryKey: ['empleadas'] })
-    setForm({ nombre: '', nombre_corto: '' })
+    setForm({ nombre: '' })
+
     setShowForm(false)
     setEditingId(null)
     setSaving(false)
   }
 
   const startEdit = (emp: Empleada) => {
-    setForm({ id: emp.id, nombre: emp.nombre, nombre_corto: emp.nombre_corto || '' })
+    setForm({ id: emp.id, nombre: emp.nombre })
     setEditingId(emp.id)
     setShowForm(true)
   }
 
+
   const cancelForm = () => {
     setShowForm(false)
     setEditingId(null)
-    setForm({ nombre: '', nombre_corto: '' })
+    setForm({ nombre: '' })
   }
+
 
   const toggleActivo = async (emp: Empleada) => {
     await supabase
@@ -73,11 +77,16 @@ export default function ProfesionalesPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       {/* Topbar */}
-      <div className="page-topbar">
-        <span className="topbar-title">Profesionales</span>
-        <button onClick={() => setShowForm(true)} className="btn-primary">
-          <Plus size={14} /> Agregar profesional
-        </button>
+      <div className="page-header" style={{ padding: '24px 24px 0', marginBottom: 20 }}>
+        <div className="page-header-content">
+          <h1 className="page-title">Profesionales</h1>
+          <p className="page-subtitle">Gestiona el personal y los especialistas del sistema</p>
+        </div>
+        <div className="page-header-actions">
+          <button onClick={() => setShowForm(true)} className="btn-primary">
+            <Plus size={14} /> Agregar profesional
+          </button>
+        </div>
       </div>
 
       <div className="page-content">
@@ -89,7 +98,7 @@ export default function ProfesionalesPage() {
               <button onClick={cancelForm} className="modal-close-btn"><X size={15} /></button>
             </div>
             <form onSubmit={handleSubmit} style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div className="form-grid-2">
+              <div className="form-grid-1">
                 <div className="form-group">
                   <label>Nombre completo</label>
                   <input
@@ -101,18 +110,8 @@ export default function ProfesionalesPage() {
                     placeholder="Ej: Daniela Ugalde..."
                   />
                 </div>
-                <div className="form-group">
-                  <label>Nombre corto (3 letras)</label>
-                  <input
-                    required
-                    maxLength={3}
-                    value={form.nombre_corto}
-                    onChange={(e) => setForm((f) => ({ ...f, nombre_corto: e.target.value }))}
-                    className="form-input"
-                    placeholder="Ej: Dan"
-                  />
-                </div>
               </div>
+
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                 <button type="button" onClick={cancelForm} className="btn-ghost">Cancelar</button>
@@ -146,8 +145,9 @@ export default function ProfesionalesPage() {
               <div key={emp.id} className="empleada-row">
                 <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
                   <span className="empleada-nombre">{emp.nombre}</span>
-                  <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 600 }}>{emp.nombre_corto || '—'}</span>
+                  <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 600 }}>{emp.nombre.substring(0, 3).toUpperCase()}</span>
                 </div>
+
                 <span className={emp.activo ? 'badge-activa' : 'badge-inactiva'}>
                   {emp.activo ? 'Activa' : 'Inactiva'}
                 </span>
