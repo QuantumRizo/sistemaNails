@@ -1,22 +1,20 @@
-import { Calendar, Users, Briefcase, BarChart2, Package, FileText } from 'lucide-react'
+import { Home, Calendar, Users, Briefcase, BarChart2, Package, FileText } from 'lucide-react'
 
-export type Section = 'agenda' | 'clientes' | 'inventario' | 'documentos' | 'configuracion' | 'validacion' | 'cobro' | 'estadisticas'
-
-
+export type Section = 'inicio' | 'agenda' | 'clientes' | 'inventario' | 'documentos' | 'configuracion' | 'validacion' | 'cobro' | 'estadisticas'
 
 interface Props {
   current: Section
   onChange: (s: Section) => void
 }
 
-const items = [
-
-  { id: 'clientes'      as Section, label: 'Clientes',     Icon: Users      },
-  { id: 'agenda'        as Section, label: 'Agenda',       Icon: Calendar   },
-  { id: 'estadisticas'  as Section, label: 'Estadísticas', Icon: BarChart2  },
-  { id: 'configuracion' as Section, label: 'Profesionales', Icon: Briefcase  },
-  { id: 'inventario'    as Section, label: 'Inventario',   Icon: Package    },
-  { id: 'documentos'    as Section, label: 'Documentos',   Icon: FileText   },
+const items: { id: Section; label: string; Icon: any }[] = [
+  { id: 'inicio',       label: 'Inicio',       Icon: Home       },
+  { id: 'clientes',     label: 'Clientes',     Icon: Users      },
+  { id: 'agenda',       label: 'Agenda',       Icon: Calendar   },
+  { id: 'estadisticas', label: 'Estadísticas', Icon: BarChart2  },
+  { id: 'configuracion',label: 'Profesionales', Icon: Briefcase  },
+  { id: 'inventario',   label: 'Inventario',   Icon: Package    },
+  { id: 'documentos',   label: 'Documentos',   Icon: FileText   },
 ]
 
 
