@@ -12,6 +12,7 @@ import EstadisticasPage from "./pages/EstadisticasPage"
 import InicioPage from "./pages/InicioPage"
 import ValidacionPage from './pages/ValidacionPage'
 import TicketPage from './pages/TicketPage'
+import CajaPage from './pages/CajaPage'
 import type { Cita } from './types/database'
 
 const queryClient = new QueryClient({
@@ -74,6 +75,7 @@ export default function App() {
             }} />
           )}
           {section === 'inventario'    && <InventarioPage />}
+          {section === 'caja'          && <CajaPage />}
           {section === 'documentos'    && <DocumentosPage />}
           {section === 'estadisticas'  && <EstadisticasPage />}
           {section === 'configuracion' && <ProfesionalesPage />}

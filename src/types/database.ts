@@ -5,6 +5,8 @@ export type CitaStatus = 'Programada' | 'En curso' | 'Finalizada' | 'Cancelada' 
 export type TicketStatus = 'Pendiente' | 'Pagado' | 'Anulado'
 export type ItemTipo = 'Servicio' | 'Producto'
 export type MetodoPago = 'Efectivo' | 'Tarjeta' | 'Transferencia' | 'Puntos' | 'Bono' | 'Anticipo' | 'Aplazado' | 'Otros'
+export type EstadoCaja = 'Abierta' | 'Cerrada'
+export type TipoMovimientoCaja = 'Ingreso Extra' | 'Gasto / Salida'
 
 
 export interface Sucursal {
@@ -146,6 +148,8 @@ export interface TicketItem {
   iva_porcentaje: number
   descuento: number
   total: number
+  vendedor_id?: string | null
+  vendedor_nombre?: string | null
 }
 
 export interface Pago {
@@ -157,6 +161,40 @@ export interface Pago {
   fecha: string
 }
 
+export interface TurnoCaja {
+  id: string
+  sucursal_id: string
+  empleada_abre_id: string | null
+  empleada_cierra_id: string | null
+  estado: EstadoCaja
+  fecha_apertura: string
+  fecha_cierre: string | null
+  monto_apertura_efectivo: number
+  monto_cierre_efectivo_real: number | null
+  total_ventas_efectivo: number
+  total_ventas_tarjeta: number
+  total_ventas_otros: number
+  total_gastos: number
+  total_ingresos_extra: number
+  diferencia_efectivo: number | null
+  notas_cierre: string | null
+  created_at: string
+  // Joins
+  empleada_abre?: Empleada
+  empleada_cierra?: Empleada
+}
+
+export interface MovimientoCaja {
+  id: string
+  turno_caja_id: string
+  empleada_id: string | null
+  tipo: TipoMovimientoCaja
+  monto: number
+  concepto: string
+  fecha: string
+  // Joins
+  empleada?: Empleada
+}
 
 // ─── UI / App Types ────────────────────────────────────────────
 
@@ -182,6 +220,8 @@ export interface Database {
       tickets: { Row: Ticket; Insert: Omit<Ticket, 'id' | 'created_at' | 'cliente' | 'sucursal' | 'vendedor' | 'items' | 'pagos'>; Update: Partial<Ticket> }
       ticket_items: { Row: TicketItem; Insert: Omit<TicketItem, 'id'>; Update: Partial<TicketItem> }
       pagos: { Row: Pago; Insert: Omit<Pago, 'id' | 'fecha'>; Update: Partial<Pago> }
+      turnos_caja: { Row: TurnoCaja; Insert: Omit<TurnoCaja, 'id' | 'created_at' | 'empleada_abre' | 'empleada_cierra'>; Update: Partial<TurnoCaja> }
+      movimientos_caja: { Row: MovimientoCaja; Insert: Omit<MovimientoCaja, 'id' | 'fecha' | 'empleada'>; Update: Partial<MovimientoCaja> }
     }
   }
 }

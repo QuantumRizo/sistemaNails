@@ -33,6 +33,18 @@ export function useCrearTicket() {
           .insert(items.map(item => ({ ...item, ticket_id: tData.id })))
         
         if (iError) throw iError
+
+        // 2.5 Descontar stock de inventario para cada producto
+        for (const item of items) {
+          if (item.tipo === 'Producto') {
+             const { error: rpcError } = await supabase.rpc('decrementar_stock_producto', {
+               p_id: item.referencia_id,
+               p_cantidad: item.cantidad
+             });
+             // No interrumpir compra entera si falla el stock, pero ideal guardarlo en un log si falla.
+             if (rpcError) console.error('Error descontando stock:', rpcError);
+          }
+        }
       }
 
       // 3. Crear los pagos

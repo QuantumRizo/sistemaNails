@@ -8,6 +8,7 @@ import { useCrearTicket } from '../hooks/useTickets'
 import { useProductos } from '../hooks/useProductos'
 import type { Cita, TicketItem, Pago, Producto } from '../types/database'
 import PagoModal from '../components/Citas/PagoModal'
+import TicketPrintView from '../components/Citas/TicketPrintView'
 
 
 interface Props {
@@ -35,7 +36,8 @@ export default function TicketPage({ cita, onBack, onFinish }: Props) {
       precio_unitario: s.precio,
       iva_porcentaje: 16,
       descuento: 0,
-      total: s.precio
+      total: s.precio,
+      vendedor_id: cita.empleada_id || ''
     }))
   )
 
@@ -44,8 +46,13 @@ export default function TicketPage({ cita, onBack, onFinish }: Props) {
   const [showProductModal, setShowProductModal] = useState(false)
   const [productSearch, setProductSearch] = useState('')
   const [propina, setPropina] = useState(0)
-  
-  // Invoice numbering
+  const [descuentoGlobal, setDescuentoGlobal] = useState(0)
+
+  const [ticketGuardado, setTicketGuardado] = useState(false)
+  const [numTicketFinal, setNumTicketFinal] = useState('')
+  const [fechaTicket, setFechaTicket] = useState('')
+
+  // Invoice numbering (from other laptop)
   const [serie] = useState('MXDUO4')
   const [numTicket] = useState(() => Math.floor(1000 + Math.random() * 9000).toString())
 
@@ -58,7 +65,7 @@ export default function TicketPage({ cita, onBack, onFinish }: Props) {
 
   // Calcs
   const subtotal = items.reduce((sum: number, item: TicketItem) => sum + item.total, 0)
-  const total = subtotal + propina
+  const total = subtotal - descuentoGlobal + propina
   const totalPagado = pagos.reduce((sum: number, p: Pago) => sum + p.importe, 0)
   const pendiente = Math.max(0, total - totalPagado)
 
@@ -69,6 +76,18 @@ export default function TicketPage({ cita, onBack, onFinish }: Props) {
       const val = parseFloat(amount)
       if (!isNaN(val)) setPropina(val)
     }
+  }
+
+  const handleAddDescuento = () => {
+    const amount = window.prompt('Introduce el monto del descuento (MXN):', '0')
+    if (amount !== null) {
+      const val = parseFloat(amount)
+      if (!isNaN(val) && val >= 0) setDescuentoGlobal(val)
+    }
+  }
+
+  const handleChangeVendedorItem = (id: string, vendId: string) => {
+    setItems(items.map(i => i.id === id ? { ...i, vendedor_id: vendId } : i))
   }
 
   const selectProduct = (p: Producto) => {
@@ -82,7 +101,8 @@ export default function TicketPage({ cita, onBack, onFinish }: Props) {
       precio_unitario: p.precio,
       iva_porcentaje: 16,
       descuento: 0,
-      total: p.precio
+      total: p.precio,
+      vendedor_id: vendedorId || ''
     }
     setItems([...items, newItem])
     setShowProductModal(false)
@@ -101,6 +121,8 @@ export default function TicketPage({ cita, onBack, onFinish }: Props) {
     
     setSaving(true)
     try {
+      const gFechaStr = new Date().toLocaleString('es-MX', { hour12: true })
+      
       await crearTicket.mutateAsync({
         ticket: {
           sucursal_id: cita.sucursal_id,
@@ -112,20 +134,25 @@ export default function TicketPage({ cita, onBack, onFinish }: Props) {
           base_imponible: subtotal / 1.16,
           iva: subtotal - (subtotal / 1.16),
           total,
-          descuento: 0,
+          descuento: descuentoGlobal,
           propina,
           estado: pendiente <= 0 ? 'Pagado' : 'Pendiente'
         },
-        items: items.map((item: TicketItem) => ({
-          tipo: item.tipo,
-          referencia_id: item.referencia_id,
-          nombre: item.nombre,
-          cantidad: item.cantidad,
-          precio_unitario: item.precio_unitario,
-          iva_porcentaje: item.iva_porcentaje,
-          descuento: item.descuento,
-          total: item.total
-        })),
+        items: items.map((item: TicketItem) => {
+          const emp = empleadas.find(e => e.id === (item.vendedor_id || vendedorId))
+          return {
+            tipo: item.tipo,
+            referencia_id: item.referencia_id,
+            nombre: item.nombre,
+            cantidad: item.cantidad,
+            precio_unitario: item.precio_unitario,
+            iva_porcentaje: item.iva_porcentaje,
+            descuento: item.descuento,
+            total: item.total,
+            vendedor_id: item.vendedor_id || vendedorId,
+            vendedor_nombre: emp?.nombre || null
+          }
+        }),
         pagos: pagos.map((p: Pago) => ({
           metodo_pago: p.metodo_pago,
           importe: p.importe,
@@ -134,13 +161,46 @@ export default function TicketPage({ cita, onBack, onFinish }: Props) {
 
         citaId: cita.id
       })
-      onFinish()
+      
+      setNumTicketFinal(`${serie}/${numTicket}`)
+      setFechaTicket(gFechaStr)
+      setTicketGuardado(true)
+
     } catch (err) {
       console.error(err)
       alert('Error al guardar el ticket')
     } finally {
       setSaving(false)
     }
+  }
+
+  if (ticketGuardado) {
+    const vendedorObj = empleadas.find(e => e.id === vendedorId)
+    const ticketData = {
+      numTicket: numTicketFinal,
+      fechaStr: fechaTicket,
+      vendedor: vendedorObj?.nombre || '',
+      items,
+      subtotal,
+      iva: total - (subtotal / 1.16),
+      total,
+      descuento: descuentoGlobal,
+      pagos,
+      pendiente
+    }
+
+    return (
+      <div className="validacion-container" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto', background: 'var(--bg)' }}>
+        <TicketPrintView cita={cita} ticketData={ticketData} />
+        
+        <div style={{ padding: 20, display: 'flex', gap: 15, justifyContent: 'center' }}>
+          <button className="btn-secondary" onClick={onFinish}>Volver a la Agenda</button>
+          <button className="btn-primary" onClick={() => window.print()}>
+            🖨️ Imprimir Ticket
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -192,6 +252,7 @@ export default function TicketPage({ cita, onBack, onFinish }: Props) {
             <thead>
               <tr>
                 <th>Concepto</th>
+                <th style={{ textAlign: 'center' }}>Atendió</th>
                 <th style={{ textAlign: 'center' }}>IVA %</th>
                 <th style={{ textAlign: 'center' }}>Uds.</th>
                 <th style={{ textAlign: 'right' }}>Precio</th>
@@ -204,6 +265,16 @@ export default function TicketPage({ cita, onBack, onFinish }: Props) {
               {items.map((item) => (
                 <tr key={item.id}>
                   <td>{item.nombre}</td>
+                  <td style={{ textAlign: 'center' }}>
+                    <select 
+                      value={item.vendedor_id || vendedorId} 
+                      onChange={(e) => handleChangeVendedorItem(item.id, e.target.value)}
+                      className="table-select" 
+                      style={{ height: 26, fontSize: 11, width: 90 }}
+                    >
+                      {empleadas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+                    </select>
+                  </td>
                   <td style={{ textAlign: 'center' }}>{item.iva_porcentaje.toFixed(2)}</td>
                   <td style={{ textAlign: 'center' }}>{item.cantidad}</td>
                   <td style={{ textAlign: 'right' }}>${item.precio_unitario.toFixed(2)}</td>
@@ -224,7 +295,7 @@ export default function TicketPage({ cita, onBack, onFinish }: Props) {
           <button className="btn-secondary" onClick={handleAddTip}><Plus size={14} /> Añadir propina</button>
           <button className="btn-secondary"><Gift size={14} /> Añadir cheque regalo</button>
           <button className="btn-secondary"><DollarSign size={14} /> Añadir anticipo</button>
-          <button className="btn-secondary"><Percent size={14} /> Código promoción</button>
+          <button className="btn-secondary" onClick={handleAddDescuento}><Percent size={14} /> Descuento / Promo</button>
           <button className="btn-secondary" onClick={() => setShowProductModal(true)}><Package size={14} /> Añadir producto</button>
         </div>
 
@@ -237,6 +308,12 @@ export default function TicketPage({ cita, onBack, onFinish }: Props) {
             <span>IVA (16%):</span>
             <span>{(subtotal - (subtotal / 1.16)).toFixed(2)}</span>
           </div>
+          {descuentoGlobal > 0 && (
+            <div className="summary-row" style={{ color: 'var(--danger)' }}>
+              <span>Descuento Aplicado:</span>
+              <span>-${descuentoGlobal.toFixed(2)}</span>
+            </div>
+          )}
           {propina > 0 && (
             <div className="summary-row">
               <span>Propina:</span>
