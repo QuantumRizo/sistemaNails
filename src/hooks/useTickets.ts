@@ -14,9 +14,9 @@ export function useCrearTicket() {
       pagos,
       citaId 
     }: { 
-      ticket: Omit<Ticket, 'id' | 'created_at' | 'cliente' | 'sucursal' | 'vendedor' | 'items' | 'pagos'>, 
+      ticket: Omit<Ticket, 'id' | 'created_at' | 'cliente' | 'sucursal' | 'vendedor' | 'items' | 'pagos' | 'hora'>, 
       items: Omit<TicketItem, 'id' | 'ticket_id'>[], 
-      pagos: Omit<Pago, 'id'>[],
+      pagos: Omit<Pago, 'id' | 'ticket_id' | 'fecha' | 'hora'>[],
       citaId: string
     }) => {
       
