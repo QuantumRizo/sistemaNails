@@ -113,20 +113,18 @@ function buildTotals(rows: ReportRow[]): Record<string, number> {
 
 // ─── 1.1.1 Clientes nuevos ────────────────────────────────────
 
-async function q_clientes_nuevos(desglose: string, sort: string, fi: string, ff: string, suc: string): Promise<ReportResult> {
-  let query = supabase
+async function q_clientes_nuevos(desglose: string, sort: string, fi: string, ff: string, _suc: string): Promise<ReportResult> {
+  // Los clientes son globales (no tienen sucursal_id propio).
+  // El desglose y filtro por sucursal no aplica en esta tabla.
+  const { data, error } = await supabase
     .from('clientes')
-    .select('id, created_at, sucursal_id, sucursal:sucursales(nombre)')
+    .select('id, created_at')
     .gte('created_at', startOfDayIso(fi))
     .lte('created_at', endOfDayIso(ff))
   
-  if (suc !== 'all') query = query.eq('sucursal_id', suc)
-  
-  const { data, error } = await query
   if (error) throw error
 
   const keyFn = (c: any) => {
-    if (desglose === 'sucursal') return c.sucursal?.nombre || 'Sin sucursal'
     if (desglose === 'mes') return c.created_at.substring(0, 7)
     if (desglose === 'dia') return c.created_at.substring(0, 10)
     return 'Total'

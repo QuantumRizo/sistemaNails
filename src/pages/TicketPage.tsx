@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { 
   X, User, Plus, Trash2, Calculator, 
-  ChevronDown, ChevronUp, Gift, DollarSign, Package, Percent, Search, Printer 
+  ChevronDown, ChevronUp, Package, Percent, Search, Printer 
 } from 'lucide-react'
 import { useTodasEmpleadas } from '../hooks/useEmpleadas'
 import { useCrearTicket } from '../hooks/useTickets'
@@ -47,16 +47,20 @@ export default function TicketPage({ cita, onBack, onFinish }: Props) {
   const [showPagoModal, setShowPagoModal] = useState(false)
   const [showProductModal, setShowProductModal] = useState(false)
   const [productSearch, setProductSearch] = useState('')
+
+  // ─── Propina Modal ───────────────────────────────────────────
+  const [showPropinaModal, setShowPropinaModal] = useState(false)
+  const [propinaInput, setPropinaInput] = useState('')
   const [propina, setPropina] = useState(0)
+
+  // ─── Descuento Modal ─────────────────────────────────────────
+  const [showDescuentoModal, setShowDescuentoModal] = useState(false)
+  const [descuentoInput, setDescuentoInput] = useState('')
   const [descuentoGlobal, setDescuentoGlobal] = useState(0)
 
   const [ticketGuardado, setTicketGuardado] = useState(false)
   const [numTicketFinal, setNumTicketFinal] = useState('')
   const [fechaTicket, setFechaTicket] = useState('')
-
-  // Invoice numbering (from other laptop)
-  const [serie] = useState('MXDUO4')
-  const [numTicket] = useState(() => Math.floor(1000 + Math.random() * 9000).toString())
 
   const { data: allProducts = [] } = useProductos()
 
@@ -71,21 +75,18 @@ export default function TicketPage({ cita, onBack, onFinish }: Props) {
   const totalPagado = pagos.reduce((sum: number, p: Pago) => sum + p.importe, 0)
   const pendiente = Math.max(0, total - totalPagado)
 
-
-  const handleAddTip = () => {
-    const amount = window.prompt('Introduce el importe de la propina:', '0')
-    if (amount !== null) {
-      const val = parseFloat(amount)
-      if (!isNaN(val)) setPropina(val)
-    }
+  const handleConfirmPropina = () => {
+    const val = parseFloat(propinaInput)
+    if (!isNaN(val) && val >= 0) setPropina(val)
+    setShowPropinaModal(false)
+    setPropinaInput('')
   }
 
-  const handleAddDescuento = () => {
-    const amount = window.prompt('Introduce el monto del descuento (MXN):', '0')
-    if (amount !== null) {
-      const val = parseFloat(amount)
-      if (!isNaN(val) && val >= 0) setDescuentoGlobal(val)
-    }
+  const handleConfirmDescuento = () => {
+    const val = parseFloat(descuentoInput)
+    if (!isNaN(val) && val >= 0 && val <= subtotal) setDescuentoGlobal(val)
+    setShowDescuentoModal(false)
+    setDescuentoInput('')
   }
 
   const handleChangeVendedorItem = (id: string, vendId: string) => {
@@ -118,20 +119,21 @@ export default function TicketPage({ cita, onBack, onFinish }: Props) {
 
   const handleFinalizar = async () => {
     if (pendiente > 0) {
-      if (!confirm(`Aún queda un saldo de $${pendiente.toFixed(2)} pendiente. ¿Deseas finalizar el ticket igualmente?`)) return
+      if (!window.confirm(`Aún queda un saldo de $${pendiente.toFixed(2)} pendiente. ¿Deseas finalizar el ticket igualmente?`)) return
     }
     
     setSaving(true)
     try {
       const gFechaStr = new Date().toLocaleString('es-MX', { hour12: true })
       
-      await crearTicket.mutateAsync({
+      const tData = await crearTicket.mutateAsync({
         ticket: {
           sucursal_id: cita.sucursal_id,
           cliente_id: cita.cliente_id,
           vendedor_id: vendedorId || null,
-          num_ticket: `${serie}/${numTicket}`,
-          fecha: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD en hora local
+          // num_ticket se genera ahora en useCrearTicket con el folio secuencial
+          num_ticket: 'pending', // será sobreescrito por el hook
+          fecha: new Date().toLocaleDateString('en-CA'),
 
           base_imponible: subtotal / 1.16,
           iva: subtotal - (subtotal / 1.16),
@@ -164,7 +166,7 @@ export default function TicketPage({ cita, onBack, onFinish }: Props) {
         citaId: cita.id
       })
       
-      setNumTicketFinal(`${serie}/${numTicket}`)
+      setNumTicketFinal(tData.num_ticket)
       setFechaTicket(gFechaStr)
       setTicketGuardado(true)
 
@@ -210,7 +212,7 @@ export default function TicketPage({ cita, onBack, onFinish }: Props) {
       {/* Header */}
       <div className="validacion-header">
         <div className="header-left">
-          <h1>Factura Nº <span style={{ color: 'var(--text-1)' }}>{serie}O/{numTicket}</span></h1>
+          <h1>Ticket de Venta</h1>
         </div>
         <div className="client-info-card" onClick={() => setShowClientData(!showClientData)} style={{ cursor: 'pointer' }}>
           <div className="client-avatar"><User size={24} /></div>
@@ -239,12 +241,6 @@ export default function TicketPage({ cita, onBack, onFinish }: Props) {
             {empleadas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
           </select>
         </div>
-        <div className="form-group">
-          <label style={{ fontSize: 11 }}>Nº Serie</label>
-          <select className="table-select" style={{ height: 32, padding: '0 8px', fontWeight: 600 }}>
-            <option>{serie}</option>
-          </select>
-        </div>
       </div>
 
       {/* Body */}
@@ -258,7 +254,6 @@ export default function TicketPage({ cita, onBack, onFinish }: Props) {
                 <th style={{ textAlign: 'center' }}>IVA %</th>
                 <th style={{ textAlign: 'center' }}>Uds.</th>
                 <th style={{ textAlign: 'right' }}>Precio</th>
-                <th style={{ textAlign: 'right' }}>Dto.</th>
                 <th style={{ textAlign: 'right' }}>Total</th>
                 <th style={{ width: 40 }}></th>
               </tr>
@@ -280,7 +275,6 @@ export default function TicketPage({ cita, onBack, onFinish }: Props) {
                   <td style={{ textAlign: 'center' }}>{item.iva_porcentaje.toFixed(2)}</td>
                   <td style={{ textAlign: 'center' }}>{item.cantidad}</td>
                   <td style={{ textAlign: 'right' }}>${item.precio_unitario.toFixed(2)}</td>
-                  <td style={{ textAlign: 'right' }}>{item.descuento.toFixed(2)} %</td>
                   <td style={{ textAlign: 'right', fontWeight: 600 }}>${item.total.toFixed(2)}</td>
                   <td style={{ textAlign: 'center' }}>
                     <button className="btn-icon danger" onClick={() => removeItem(item.id)}>
@@ -294,11 +288,15 @@ export default function TicketPage({ cita, onBack, onFinish }: Props) {
         </div>
 
         <div className="ticket-actions-grid">
-          <button className="btn-secondary" onClick={handleAddTip}><Plus size={14} /> Añadir propina</button>
-          <button className="btn-secondary"><Gift size={14} /> Añadir cheque regalo</button>
-          <button className="btn-secondary"><DollarSign size={14} /> Añadir anticipo</button>
-          <button className="btn-secondary" onClick={handleAddDescuento}><Percent size={14} /> Descuento / Promo</button>
-          <button className="btn-secondary" onClick={() => setShowProductModal(true)}><Package size={14} /> Añadir producto</button>
+          <button className="btn-secondary" onClick={() => { setPropinaInput(String(propina)); setShowPropinaModal(true) }}>
+            <Plus size={14} /> {propina > 0 ? `Propina: $${propina.toFixed(2)}` : 'Añadir propina'}
+          </button>
+          <button className="btn-secondary" onClick={() => { setDescuentoInput(String(descuentoGlobal)); setShowDescuentoModal(true) }}>
+            <Percent size={14} /> {descuentoGlobal > 0 ? `Descuento: -$${descuentoGlobal.toFixed(2)}` : 'Descuento / Promo'}
+          </button>
+          <button className="btn-secondary" onClick={() => setShowProductModal(true)}>
+            <Package size={14} /> Añadir producto
+          </button>
         </div>
 
         <div className="ticket-summary-card">
@@ -358,17 +356,88 @@ export default function TicketPage({ cita, onBack, onFinish }: Props) {
         </button>
       </div>
 
-      {/* Modals */}
+      {/* Modal Pago */}
       {showPagoModal && (
         <PagoModal
           pendiente={pendiente}
           onClose={() => setShowPagoModal(false)}
           onAddPago={(p: Pago) => setPagos([...pagos, p])}
         />
-
       )}
 
+      {/* Modal Propina */}
+      {showPropinaModal && (
+        <div className="modal-overlay" onClick={() => setShowPropinaModal(false)}>
+          <div className="modal-box" style={{ maxWidth: 360 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">Añadir propina</h3>
+            </div>
+            <div className="modal-body p-5">
+              <div className="form-group">
+                <label>Importe de propina (MXN)</label>
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: 13, top: 11, color: 'var(--text-3)', fontSize: 16 }}>$</span>
+                  <input
+                    type="number"
+                    className="form-input"
+                    style={{ paddingLeft: 28, fontSize: 20, fontWeight: 700 }}
+                    value={propinaInput}
+                    onChange={e => setPropinaInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleConfirmPropina()}
+                    autoFocus
+                    min="0"
+                    step="10"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={() => setShowPropinaModal(false)}>Cancelar</button>
+              <button className="btn-primary" onClick={handleConfirmPropina}>Aplicar propina</button>
+            </div>
+          </div>
+        </div>
+      )}
 
+      {/* Modal Descuento */}
+      {showDescuentoModal && (
+        <div className="modal-overlay" onClick={() => setShowDescuentoModal(false)}>
+          <div className="modal-box" style={{ maxWidth: 360 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">Aplicar descuento</h3>
+            </div>
+            <div className="modal-body p-5">
+              <div className="form-group">
+                <label>Monto del descuento (MXN)</label>
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: 13, top: 11, color: 'var(--danger)', fontSize: 16 }}>-$</span>
+                  <input
+                    type="number"
+                    className="form-input"
+                    style={{ paddingLeft: 35, fontSize: 20, fontWeight: 700, color: 'var(--danger)' }}
+                    value={descuentoInput}
+                    onChange={e => setDescuentoInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleConfirmDescuento()}
+                    autoFocus
+                    min="0"
+                    max={subtotal}
+                    step="10"
+                  />
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 6 }}>
+                  Máximo: ${subtotal.toFixed(2)}
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={() => setShowDescuentoModal(false)}>Cancelar</button>
+              <button className="btn-primary" onClick={handleConfirmDescuento}>Aplicar descuento</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Producto */}
       {showProductModal && (
         <div className="modal-overlay" onClick={() => setShowProductModal(false)}>
           <div className="modal-box" style={{ maxWidth: 500 }} onClick={e => e.stopPropagation()}>
@@ -394,7 +463,7 @@ export default function TicketPage({ cita, onBack, onFinish }: Props) {
                   <div 
                     key={p.id} 
                     className="product-search-item" 
-                    style={{ padding: '10px 15px', borderBottom: '1px solid var(--border-color)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}
+                    style={{ padding: '10px 15px', borderBottom: '1px solid var(--border)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}
                     onClick={() => selectProduct(p)}
                   >
                     <div>

@@ -92,13 +92,14 @@ import { format } from 'date-fns'
 export function useAbrirCaja() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ sucursalId, montoEfectivo }: { sucursalId: string, montoEfectivo: number }) => {
+    mutationFn: async ({ sucursalId, montoEfectivo, empleadaId }: { sucursalId: string, montoEfectivo: number, empleadaId?: string }) => {
       
       const now = new Date()
       const { data, error } = await supabase
         .from('turnos_caja')
         .insert({
           sucursal_id: sucursalId,
+          empleada_abre_id: empleadaId || null,
           monto_apertura_efectivo: montoEfectivo,
           fecha_apertura: format(now, 'yyyy-MM-dd'),
           hora_apertura: format(now, 'HH:mm:ss'),

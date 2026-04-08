@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Wallet, DollarSign, CreditCard, CheckCircle, TrendingDown, Clock } from 'lucide-react'
+import { Wallet, DollarSign, CreditCard, CheckCircle, TrendingDown, TrendingUp, Clock, AlertTriangle } from 'lucide-react'
 import { useCajaActiva, useAbrirCaja, useCerrarCaja, useCrearMovimientoCaja } from '../hooks/useCaja'
 import { useTodasEmpleadas } from '../hooks/useEmpleadas'
 import { useSucursales } from '../hooks/useSucursales'
@@ -16,15 +16,26 @@ export default function CajaPage() {
 
   const { data: cajaInfo, isLoading } = useCajaActiva(activeSucursal)
   const [montoApertura, setMontoApertura] = useState(0)
+  const [empleadaAperturaId, setEmpleadaAperturaId] = useState('')
   const abrirCaja = useAbrirCaja()
 
+  // ─── Modal Gasto ─────────────────────────────────────────────
   const [showGastoModal, setShowGastoModal] = useState(false)
   const [gastoMonto, setGastoMonto] = useState(0)
   const [gastoConcepto, setGastoConcepto] = useState('')
   const [gastoEmpleadaId, setGastoEmpleadaId] = useState('')
+
+  // ─── Modal Ingreso Extra ──────────────────────────────────────
+  const [showIngresoModal, setShowIngresoModal] = useState(false)
+  const [ingresoMonto, setIngresoMonto] = useState(0)
+  const [ingresoConcepto, setIngresoConcepto] = useState('')
+  const [ingresoEmpleadaId, setIngresoEmpleadaId] = useState('')
+
   const crearMovimiento = useCrearMovimientoCaja()
 
+  // ─── Modal Cierre ─────────────────────────────────────────────
   const [showCierreModal, setShowCierreModal] = useState(false)
+  const [showCierreConfirmModal, setShowCierreConfirmModal] = useState(false)
   const [montoReal, setMontoReal] = useState(0)
   const [notasCierre, setNotasCierre] = useState('')
   const cerrarCaja = useCerrarCaja()
@@ -33,10 +44,15 @@ export default function CajaPage() {
 
   const handleAbrirCaja = async () => {
     if (montoApertura < 0) { toast('Monto inválido', 'warning'); return }
+    if (!activeSucursal) { toast('Selecciona una sucursal', 'warning'); return }
     try {
-      if (!activeSucursal) { toast('Selecciona una sucursal', 'warning'); return }
-      await abrirCaja.mutateAsync({ sucursalId: activeSucursal, montoEfectivo: montoApertura })
+      await abrirCaja.mutateAsync({ 
+        sucursalId: activeSucursal, 
+        montoEfectivo: montoApertura,
+        empleadaId: empleadaAperturaId || undefined
+      })
       setMontoApertura(0)
+      setEmpleadaAperturaId('')
     } catch (e) {
       console.error(e)
       toast('Error abriendo caja', 'error')
@@ -57,30 +73,46 @@ export default function CajaPage() {
       setShowGastoModal(false)
       setGastoMonto(0)
       setGastoConcepto('')
+      setGastoEmpleadaId('')
     } catch (e) {
       console.error(e)
       toast('Error al registrar movimiento', 'error')
     }
   }
 
-  const handleCerrarCaja = async () => {
-    if (montoReal < 0) { toast('Por favor ingresa un monto válido', 'warning'); return }
+  const handleGuardarIngreso = async () => {
+    if (!ingresoConcepto || ingresoMonto <= 0) { toast('Faltan datos del ingreso', 'warning'); return }
     try {
       if (!cajaInfo?.turno.id) return
-      
-      const confirmacion = window.confirm(
-        `Efectivo esperado: $${cajaInfo.resumen.efectivoEsperado.toFixed(2)}\nEfectivo contado: $${montoReal.toFixed(2)}\nDiferencia: $${(montoReal - cajaInfo.resumen.efectivoEsperado).toFixed(2)}\n\n¿Estás segura de cerrar la caja?`
-      )
+      await crearMovimiento.mutateAsync({
+        turno_caja_id: cajaInfo.turno.id,
+        tipo: 'Ingreso Extra',
+        monto: ingresoMonto,
+        concepto: ingresoConcepto,
+        empleada_id: ingresoEmpleadaId || null
+      })
+      setShowIngresoModal(false)
+      setIngresoMonto(0)
+      setIngresoConcepto('')
+      setIngresoEmpleadaId('')
+    } catch (e) {
+      console.error(e)
+      toast('Error al registrar ingreso', 'error')
+    }
+  }
 
-      if (!confirmacion) return
-
+  const handleCerrarCaja = async () => {
+    try {
+      if (!cajaInfo?.turno.id) return
       await cerrarCaja.mutateAsync({
         turnoId: cajaInfo.turno.id,
         resumen: cajaInfo.resumen,
         montoReal: montoReal,
         notas: notasCierre
       })
+      setShowCierreConfirmModal(false)
       setShowCierreModal(false)
+      toast('Caja cerrada correctamente', 'success')
     } catch (e) {
       console.error(e)
       toast('Error al cerrar caja', 'error')
@@ -120,6 +152,22 @@ export default function CajaPage() {
           </p>
 
           <div style={{ padding: 20, background: 'var(--surface-2)', borderRadius: 12, border: '1px solid var(--border-2)', width: '100%' }}>
+            
+            {/* Empleada que abre */}
+            <div className="form-group" style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>
+                ¿Quién abre la caja?
+              </label>
+              <select 
+                className="form-input" 
+                value={empleadaAperturaId}
+                onChange={e => setEmpleadaAperturaId(e.target.value)}
+              >
+                <option value="">— Seleccionar empleada —</option>
+                {empleadas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+              </select>
+            </div>
+
             <label style={{ display: 'block', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>
               Fondo inicial (Efectivo)
             </label>
@@ -172,14 +220,22 @@ export default function CajaPage() {
           </div>
           <p style={{ fontSize: 13, color: 'var(--text-3)', display: 'flex', alignItems: 'center', gap: 6 }}>
             <Clock size={14} /> Abierto desde {new Date(`${cajaInfo.turno.fecha_apertura}T${cajaInfo.turno.hora_apertura}`).toLocaleString('es-MX', { dateStyle: 'long', timeStyle: 'short' })}
+            {cajaInfo.turno.empleada_abre && (
+              <span style={{ marginLeft: 8, background: 'var(--surface-2)', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>
+                Apertura: {(cajaInfo.turno.empleada_abre as any).nombre}
+              </span>
+            )}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
+          <button className="btn-secondary" onClick={() => setShowIngresoModal(true)}>
+            <TrendingUp size={16} /> Ingreso Extra
+          </button>
           <button className="btn-secondary" onClick={() => setShowGastoModal(true)}>
             <TrendingDown size={16} /> Registrar Gasto
           </button>
           <button className="btn-primary" onClick={() => {
-            setMontoReal(t.efectivoEsperado) // auto set expected initially for ease
+            setMontoReal(t.efectivoEsperado)
             setShowCierreModal(true)
           }}>
             <Wallet size={16} /> Cerrar Caja (Corte)
@@ -188,7 +244,7 @@ export default function CajaPage() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginBottom: 30 }}>
-        {/* Metric 1 */}
+        {/* Métrica 1 */}
         <div className="dash-card">
           <div className="dash-card-header">
             <span className="dash-card-title">Ventas Efectivo</span>
@@ -202,7 +258,7 @@ export default function CajaPage() {
           </div>
         </div>
         
-        {/* Metric 2 */}
+        {/* Métrica 2 */}
         <div className="dash-card">
           <div className="dash-card-header">
             <span className="dash-card-title">Ventas Tarjeta / Otros</span>
@@ -216,7 +272,23 @@ export default function CajaPage() {
           </div>
         </div>
 
-        {/* Metric 3 */}
+        {/* Métrica 3 */}
+        {t.ingresosExtra > 0 && (
+          <div className="dash-card">
+            <div className="dash-card-header">
+              <span className="dash-card-title">Ingresos Extra</span>
+              <div className="dash-icon-box" style={{ background: 'var(--success-bg)', color: 'var(--success)' }}>
+                <TrendingUp size={18} />
+              </div>
+            </div>
+            <div>
+              <div className="dash-card-value" style={{ color: 'var(--success)' }}>+${t.ingresosExtra.toFixed(2)}</div>
+              <div className="dash-card-subvalue" style={{ marginTop: 4 }}>Entradas adicionales de efectivo</div>
+            </div>
+          </div>
+        )}
+
+        {/* Métrica Gastos */}
         <div className="dash-card" style={{ borderColor: 'var(--danger)', background: 'var(--bg)' }}>
           <div className="dash-card-header">
             <span className="dash-card-title">Gastos del Turno</span>
@@ -249,8 +321,49 @@ export default function CajaPage() {
         <div style={{ opacity: 0.1 }}><Wallet size={100} /></div>
       </div>
 
+      {/* Movimientos del turno */}
+      {(cajaInfo.movimientos || []).length > 0 && (
+        <div style={{ background: 'var(--surface)', borderRadius: 12, padding: 20, border: '1px solid var(--border)', marginBottom: 30 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 15, color: 'var(--text-1)' }}>Movimientos del turno</h3>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Hora</th>
+                <th>Tipo</th>
+                <th>Concepto</th>
+                <th>Empleada</th>
+                <th style={{ textAlign: 'right' }}>Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cajaInfo.movimientos.map((m: any) => (
+                <tr key={m.id}>
+                  <td style={{ fontSize: 12, color: 'var(--text-3)' }}>{m.hora?.substring(0, 5)}</td>
+                  <td>
+                    <span style={{ 
+                      fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
+                      background: m.tipo === 'Gasto / Salida' ? 'var(--danger-bg)' : 'var(--success-bg)',
+                      color: m.tipo === 'Gasto / Salida' ? 'var(--danger)' : 'var(--success)'
+                    }}>
+                      {m.tipo}
+                    </span>
+                  </td>
+                  <td>{m.concepto}</td>
+                  <td style={{ fontSize: 12 }}>{m.empleada?.nombre || '—'}</td>
+                  <td style={{ textAlign: 'right', fontWeight: 600, color: m.tipo === 'Gasto / Salida' ? 'var(--danger)' : 'var(--success)' }}>
+                    {m.tipo === 'Gasto / Salida' ? '-' : '+'}${Number(m.monto).toFixed(2)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-      {/* MODALES */}
+
+      {/* ─── MODALES ─────────────────────────────────────────────── */}
+
+      {/* Modal Gasto */}
       {showGastoModal && (
         <div className="modal-overlay" onClick={() => setShowGastoModal(false)}>
           <div className="modal-box" onClick={e => e.stopPropagation()}>
@@ -260,14 +373,14 @@ export default function CajaPage() {
             <div className="modal-body p-5">
               <div className="form-group mb-4">
                 <label>Concepto / Motivo</label>
-                <input type="text" className="form-input" placeholder="Ej. Compra de material..." value={gastoConcepto} onChange={e => setGastoConcepto(e.target.value)} />
+                <input type="text" className="form-input" placeholder="Ej. Compra de material..." value={gastoConcepto} onChange={e => setGastoConcepto(e.target.value)} autoFocus />
               </div>
               <div className="form-group mb-4">
-                <label>Monto extraído</label>
-                <input type="number" className="form-input" value={gastoMonto} onChange={e => setGastoMonto(Number(e.target.value))} />
+                <label>Monto extraído ($)</label>
+                <input type="number" className="form-input" value={gastoMonto} onChange={e => setGastoMonto(Number(e.target.value))} min="0" step="10" />
               </div>
               <div className="form-group">
-                <label>Comprobante / Empleada que retira (Opcional)</label>
+                <label>Empleada que retira (Opcional)</label>
                 <select className="form-input" value={gastoEmpleadaId} onChange={e => setGastoEmpleadaId(e.target.value)}>
                   <option value="">-- Seleccionar --</option>
                   {empleadas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
@@ -277,13 +390,48 @@ export default function CajaPage() {
             <div className="modal-footer">
               <button className="btn-secondary" onClick={() => setShowGastoModal(false)}>Cancelar</button>
               <button className="btn-danger" onClick={handleGuardarGasto} disabled={crearMovimiento.isPending}>
-                Retirar Dinero
+                Registrar Gasto
               </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Modal Ingreso Extra */}
+      {showIngresoModal && (
+        <div className="modal-overlay" onClick={() => setShowIngresoModal(false)}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">Registrar Ingreso Extra</h3>
+            </div>
+            <div className="modal-body p-5">
+              <div className="form-group mb-4">
+                <label>Concepto / Descripción</label>
+                <input type="text" className="form-input" placeholder="Ej. Cambio de billete, depósito..." value={ingresoConcepto} onChange={e => setIngresoConcepto(e.target.value)} autoFocus />
+              </div>
+              <div className="form-group mb-4">
+                <label>Monto ingresado ($)</label>
+                <input type="number" className="form-input" value={ingresoMonto} onChange={e => setIngresoMonto(Number(e.target.value))} min="0" step="10" />
+              </div>
+              <div className="form-group">
+                <label>Empleada responsable (Opcional)</label>
+                <select className="form-input" value={ingresoEmpleadaId} onChange={e => setIngresoEmpleadaId(e.target.value)}>
+                  <option value="">-- Seleccionar --</option>
+                  {empleadas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={() => setShowIngresoModal(false)}>Cancelar</button>
+              <button className="btn-primary" onClick={handleGuardarIngreso} disabled={crearMovimiento.isPending}>
+                <TrendingUp size={16} /> Registrar Ingreso
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Cierre (Paso 1: ingresar monto) */}
       {showCierreModal && (
         <div className="modal-overlay" onClick={() => setShowCierreModal(false)}>
           <div className="modal-box" onClick={e => e.stopPropagation()}>
@@ -301,6 +449,12 @@ export default function CajaPage() {
                   <span style={{ fontSize: 13, color: 'var(--text-2)' }}>Ventas Efectivo:</span>
                   <span style={{ fontWeight: 600 }}>${t.ventasEfectivo.toFixed(2)}</span>
                 </div>
+                {t.ingresosExtra > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <span style={{ fontSize: 13, color: 'var(--text-2)' }}>Ingresos Extra:</span>
+                    <span style={{ fontWeight: 600, color: 'var(--success)' }}>+${t.ingresosExtra.toFixed(2)}</span>
+                  </div>
+                )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                   <span style={{ fontSize: 13, color: 'var(--text-2)' }}>Gastos / Retiros:</span>
                   <span style={{ fontWeight: 600, color: 'var(--danger)' }}>-${t.gastos.toFixed(2)}</span>
@@ -345,8 +499,51 @@ export default function CajaPage() {
             </div>
             <div className="modal-footer">
               <button className="btn-secondary" onClick={() => setShowCierreModal(false)}>Cancelar</button>
-              <button className="btn-primary" onClick={handleCerrarCaja} disabled={cerrarCaja.isPending}>
-                <Wallet size={16} /> Procesar Cierre
+              <button className="btn-primary" onClick={() => {
+                setShowCierreModal(false)
+                setShowCierreConfirmModal(true)
+              }}>
+                <Wallet size={16} /> Continuar → Confirmar Cierre
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Cierre (Paso 2: Confirmación visual) */}
+      {showCierreConfirmModal && (
+        <div className="modal-overlay">
+          <div className="modal-box" style={{ maxWidth: 400 }}>
+            <div className="modal-header" style={{ background: 'var(--danger-bg)', borderBottom: '1px solid var(--danger)' }}>
+              <AlertTriangle size={20} color="var(--danger)" />
+              <h3 className="modal-title" style={{ color: 'var(--danger)' }}>Confirmar Cierre de Caja</h3>
+            </div>
+            <div className="modal-body p-6">
+              <p style={{ marginBottom: 20, fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6 }}>
+                Estás a punto de cerrar el turno de caja. Esta acción <strong>no se puede revertir</strong>.
+              </p>
+              <div style={{ padding: 15, background: 'var(--surface-2)', borderRadius: 8, fontSize: 13 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span>Efectivo esperado:</span>
+                  <span style={{ fontWeight: 700 }}>${t.efectivoEsperado.toFixed(2)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span>Efectivo contado:</span>
+                  <span style={{ fontWeight: 700 }}>${montoReal.toFixed(2)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 15, color: montoReal >= t.efectivoEsperado ? 'var(--success)' : 'var(--danger)' }}>
+                  <span>Diferencia:</span>
+                  <span>{montoReal >= t.efectivoEsperado ? '+' : ''}{(montoReal - t.efectivoEsperado).toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={() => {
+                setShowCierreConfirmModal(false)
+                setShowCierreModal(true)
+              }}>← Volver</button>
+              <button className="btn-danger" onClick={handleCerrarCaja} disabled={cerrarCaja.isPending}>
+                {cerrarCaja.isPending ? 'Cerrando...' : 'Confirmar Cierre'}
               </button>
             </div>
           </div>

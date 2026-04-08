@@ -1,7 +1,7 @@
-import { Home, Calendar, Users, Briefcase, BarChart2, Package, Wallet, FileDown, FolderOpen, Receipt } from 'lucide-react'
+import { Home, Calendar, Users, Briefcase, BarChart2, Package, Wallet, FileDown, FolderOpen, Receipt, ShoppingCart, ClipboardList } from 'lucide-react'
 import { useSucursales } from '../../hooks/useSucursales'
 
-export type Section = 'inicio' | 'agenda' | 'clientes' | 'inventario' | 'documentos' | 'configuracion' | 'validacion' | 'cobro' | 'estadisticas' | 'reportes' | 'facturacion' | 'caja'
+export type Section = 'inicio' | 'agenda' | 'clientes' | 'inventario' | 'documentos' | 'configuracion' | 'validacion' | 'cobro' | 'estadisticas' | 'reportes' | 'facturacion' | 'caja' | 'venta-directa' | 'hoja'
 
 interface Props {
   current: Section
@@ -9,16 +9,18 @@ interface Props {
 }
 
 const items: { id: Section; label: string; Icon: any }[] = [
-  { id: 'inicio',       label: 'Inicio',       Icon: Home       },
-  { id: 'clientes',     label: 'Clientes',     Icon: Users      },
-  { id: 'agenda',       label: 'Agenda',       Icon: Calendar   },
-  { id: 'estadisticas', label: 'Estadísticas', Icon: BarChart2  },
-  { id: 'reportes',     label: 'Reportes',     Icon: FileDown   },
-  { id: 'configuracion',label: 'Profesionales', Icon: Briefcase  },
-  { id: 'inventario',   label: 'Inventario',   Icon: Package    },
-  { id: 'facturacion',  label: 'Facturación',  Icon: Receipt    },
-  { id: 'caja',         label: 'Caja',         Icon: Wallet     },
-  { id: 'documentos',   label: 'Documentos',   Icon: FolderOpen },
+  { id: 'inicio',         label: 'Inicio',         Icon: Home         },
+  { id: 'clientes',       label: 'Clientes',       Icon: Users        },
+  { id: 'agenda',         label: 'Agenda',         Icon: Calendar     },
+  { id: 'venta-directa',  label: 'Venta Directa',  Icon: ShoppingCart },
+  { id: 'estadisticas',   label: 'Estadísticas',   Icon: BarChart2    },
+  { id: 'reportes',       label: 'Reportes',       Icon: FileDown     },
+  { id: 'hoja',           label: 'Eval. de Hoja',  Icon: ClipboardList },
+  { id: 'configuracion',  label: 'Profesionales',  Icon: Briefcase    },
+  { id: 'inventario',     label: 'Inventario',     Icon: Package      },
+  { id: 'facturacion',    label: 'Facturación',    Icon: Receipt      },
+  { id: 'caja',           label: 'Caja',           Icon: Wallet       },
+  { id: 'documentos',     label: 'Documentos',     Icon: FolderOpen   },
 ]
 
 

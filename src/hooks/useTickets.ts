@@ -24,11 +24,21 @@ export function useCrearTicket() {
       const fechaActual = format(now, 'yyyy-MM-dd')
       const horaActual = format(now, 'HH:mm:ss')
 
-      // 1. Crear el ticket
+      // 1. Obtener el siguiente folio secuencial de forma atómica desde Supabase
+      const { data: folioData, error: folioError } = await supabase
+        .rpc('siguiente_folio_ticket', { p_sucursal_id: ticket.sucursal_id })
+
+      if (folioError) throw folioError
+
+      const numeroFolio = folioData as number
+      const numTicketGenerado = `T-${String(numeroFolio).padStart(5, '0')}`
+
+      // 2. Crear el ticket
       const { data: tData, error: tError } = await supabase
         .from('tickets')
         .insert({
           ...ticket,
+          num_ticket: numTicketGenerado,
           fecha: fechaActual,
           hora: horaActual
         })
@@ -37,7 +47,7 @@ export function useCrearTicket() {
       
       if (tError) throw tError
 
-      // 2. Crear los items del ticket con el ID del ticket recién creado
+      // 3. Crear los items del ticket con el ID del ticket recién creado
       if (items.length > 0) {
         const { error: iError } = await supabase
           .from('ticket_items')
@@ -45,20 +55,19 @@ export function useCrearTicket() {
         
         if (iError) throw iError
 
-        // 2.5 Descontar stock de inventario para cada producto
+        // 3.5 Descontar stock de inventario para cada producto
         for (const item of items) {
           if (item.tipo === 'Producto') {
              const { error: rpcError } = await supabase.rpc('decrementar_stock_producto', {
                p_id: item.referencia_id,
                p_cantidad: item.cantidad
              });
-             // No interrumpir compra entera si falla el stock, pero ideal guardarlo en un log si falla.
              if (rpcError) console.error('Error descontando stock:', rpcError);
           }
         }
       }
 
-      // 3. Crear los pagos
+      // 4. Crear los pagos
       if (pagos.length > 0) {
         const { error: pError } = await supabase
           .from('pagos')
@@ -72,7 +81,7 @@ export function useCrearTicket() {
         if (pError) throw pError
       }
 
-      // 4. Vincular el ticket a la cita y marcarla como Finalizada
+      // 5. Vincular el ticket a la cita y marcarla como Finalizada
       const { error: cError } = await supabase
         .from('citas')
         .update({ ticket_id: tData.id, estado: 'Finalizada' })
@@ -84,6 +93,90 @@ export function useCrearTicket() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['citas'] })
+      qc.invalidateQueries({ queryKey: ['tickets'] })
+    }
+  })
+}
+
+// ─── Ticket para venta directa (sin cita) ─────────────────────
+export function useCrearTicketDirecto() {
+  const qc = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async ({ 
+      ticket, 
+      items, 
+      pagos,
+    }: { 
+      ticket: Omit<Ticket, 'id' | 'created_at' | 'cliente' | 'sucursal' | 'vendedor' | 'items' | 'pagos' | 'hora'>, 
+      items: Omit<TicketItem, 'id' | 'ticket_id'>[], 
+      pagos: Omit<Pago, 'id' | 'ticket_id' | 'fecha' | 'hora'>[],
+    }) => {
+      
+      const now = new Date()
+      const fechaActual = format(now, 'yyyy-MM-dd')
+      const horaActual = format(now, 'HH:mm:ss')
+
+      // Obtener folio secuencial
+      const { data: folioData, error: folioError } = await supabase
+        .rpc('siguiente_folio_ticket', { p_sucursal_id: ticket.sucursal_id })
+
+      if (folioError) throw folioError
+
+      const numeroFolio = folioData as number
+      const numTicketGenerado = `T-${String(numeroFolio).padStart(5, '0')}`
+
+      // Crear el ticket
+      const { data: tData, error: tError } = await supabase
+        .from('tickets')
+        .insert({
+          ...ticket,
+          num_ticket: numTicketGenerado,
+          fecha: fechaActual,
+          hora: horaActual
+        })
+        .select()
+        .single()
+      
+      if (tError) throw tError
+
+      // Crear items
+      if (items.length > 0) {
+        const { error: iError } = await supabase
+          .from('ticket_items')
+          .insert(items.map(item => ({ ...item, ticket_id: tData.id })))
+        
+        if (iError) throw iError
+
+        // Descontar stock
+        for (const item of items) {
+          if (item.tipo === 'Producto') {
+             const { error: rpcError } = await supabase.rpc('decrementar_stock_producto', {
+               p_id: item.referencia_id,
+               p_cantidad: item.cantidad
+             });
+             if (rpcError) console.error('Error descontando stock:', rpcError);
+          }
+        }
+      }
+
+      // Crear pagos
+      if (pagos.length > 0) {
+        const { error: pError } = await supabase
+          .from('pagos')
+          .insert(pagos.map(p => ({ 
+            ...p, 
+            ticket_id: tData.id,
+            fecha: fechaActual,
+            hora: horaActual
+          })))
+        
+        if (pError) throw pError
+      }
+
+      return tData
+    },
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tickets'] })
     }
   })

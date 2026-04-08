@@ -50,15 +50,20 @@ export function useDashboardData(sucursalId: string, range: TimeRange) {
           runQuery('4.4.1', 'tratamiento', 'total_desc', sFi, sFf, sucursalId), // Top Treatments
           runQuery('4.17.1', 'hora', 'cantidad_desc', sFi, sFf, sucursalId), // Peak Hours
           runQuery('4.9.1', 'producto', 'total_desc', sFi, sFf, sucursalId), // Sales by Product
-          runQuery('1.2', 'procedencia', 'cantidad_desc', sFi, sFf, ''), // Client Origin (Global usually)
+          runQuery('1.2', 'procedencia', 'cantidad_desc', sFi, sFf, ''), // Client Origin (Global)
           runQuery('4.12.1', 'metodo', 'total_desc', sFi, sFf, sucursalId)  // Payment Methods
         ])
+
+        // Tasa de asistencia: promedio ponderado global (no solo primera fila)
+        const totalCitas = attendance.rows.reduce((s: number, r: any) => s + (r.total_citas ?? 0), 0)
+        const totalNoAsistidas = attendance.rows.reduce((s: number, r: any) => s + (r.no_asistidas ?? 0), 0)
+        const globalAbsencePct = totalCitas > 0 ? (totalNoAsistidas / totalCitas) * 100 : 0
 
         setData({
           revenue: revenue.totals.total || 0,
           appointments: appointments.totals.cantidad || 0,
           newClients: newClients.totals.cantidad || 0,
-          attendanceRate: attendance.rows.length > 0 ? (100 - (attendance.rows[0].porcentaje || 0)) : 100,
+          attendanceRate: 100 - globalAbsencePct,
           treatments: treatments.rows.slice(0, 5),
           attendanceSummary: attendance.rows,
           peakHours: peakHours.rows,

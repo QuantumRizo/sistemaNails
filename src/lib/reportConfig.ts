@@ -69,8 +69,12 @@ export const INDICATOR_CONFIG: Record<string, IndicatorConfig> = {
       { key: 'cantidad', label: 'Cantidad', type: 'number', align: 'right' },
       { key: 'porcentaje', label: 'Porcentaje', type: 'percent', align: 'right' },
     ],
-    desgloseOptions: BY_PERIOD,
-    defaultDesglose: 'sucursal', sortOptions: SORT_COUNT_NAME, defaultSort: 'cantidad_desc',
+    desgloseOptions: [
+      { value: 'total', label: 'Total global' },
+      { value: 'mes', label: 'Por mes' },
+      { value: 'dia', label: 'Por día' },
+    ],
+    defaultDesglose: 'total', sortOptions: SORT_COUNT_NAME, defaultSort: 'cantidad_desc',
   },
   '1.1.2': {
     id: '1.1.2', nombre: '1.1.2.- Nº Total de primeras sesiones', categoria: '1',
