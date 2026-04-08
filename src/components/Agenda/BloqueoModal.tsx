@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { X } from 'lucide-react'
-import { format, addDays, getDay } from 'date-fns'
+import { format } from 'date-fns'
 import { useCrearBloqueos } from '../../hooks/useCitas'
 import type { Empleada } from '../../types/database'
 import DatePicker from '../Common/DatePicker'
@@ -67,18 +67,44 @@ export default function BloqueoModal({ empleadas, onClose }: Props) {
       toast('Por favor selecciona al menos un profesional', 'warning')
       return
     }
+    if (repeticion && diasRepeticion.length === 0) {
+      toast('Selecciona al menos un día de repetición', 'warning')
+      return
+    }
 
     const bloqueos: any[] = []
-    const start = new Date(fecha + 'T00:00:00')
-    const end = repeticion && fechaHasta ? new Date(fechaHasta + 'T00:00:00') : start
 
-    let current = new Date(start)
+    // Parsear sin zona horaria: igual que las citas
+    const parseLocal = (str: string) => {
+      const [y, m, d] = str.split('-').map(Number)
+      return new Date(y, m - 1, d)
+    }
+
+    const start = parseLocal(fecha)
+
+    // Si hay repetición sin fecha límite → 1 año desde el inicio
+    let end: Date
+    if (repeticion) {
+      if (fechaHasta) {
+        end = parseLocal(fechaHasta)
+      } else {
+        end = parseLocal(fecha)
+        end.setFullYear(end.getFullYear() + 1)
+      }
+    } else {
+      end = start
+    }
+
+    let current = parseLocal(fecha)
     while (current <= end) {
-      const dayNum = getDay(current)
-      
-      // If not repeating, just use the first date. If repeating, check if the day matches.
+      const dayNum = current.getDay() // correcto: usa hora local
+
       if (!repeticion || diasRepeticion.includes(dayNum)) {
-        const fechaStr = format(current, 'yyyy-MM-dd')
+        const fechaStr = [
+          current.getFullYear(),
+          String(current.getMonth() + 1).padStart(2, '0'),
+          String(current.getDate()).padStart(2, '0')
+        ].join('-')
         selectedEmpleadas.forEach((empId) => {
           bloqueos.push({
             empleada_id: empId,
@@ -89,7 +115,7 @@ export default function BloqueoModal({ empleadas, onClose }: Props) {
           })
         })
       }
-      current = addDays(current, 1)
+      current.setDate(current.getDate() + 1)
       if (!repeticion) break
     }
 
@@ -100,6 +126,7 @@ export default function BloqueoModal({ empleadas, onClose }: Props) {
 
     try {
       await crearBloqueos.mutateAsync(bloqueos)
+      toast(`${bloqueos.length} bloqueo(s) creado(s) correctamente`, 'success')
       onClose()
     } catch (err) {
       console.error(err)
@@ -226,13 +253,18 @@ export default function BloqueoModal({ empleadas, onClose }: Props) {
                     <span style={{ fontSize: 11 }}>(Todos)</span>
                   </label>
                 </div>
-                <div style={{ marginTop: 24, display: 'flex' }}>
+                <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <DatePicker 
-                    label="Hasta"
+                    label="Hasta (opcional)"
                     value={fechaHasta}
                     onChange={setFechaHasta}
                     minDate={fecha}
                   />
+                  <div style={{ fontSize: 11, color: 'var(--text-3)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    {fechaHasta
+                      ? `Repite hasta el ${fechaHasta}`
+                      : '⚠️ Sin fecha límite: se crearán bloqueos por 1 año'}
+                  </div>
                 </div>
               </div>
             )}

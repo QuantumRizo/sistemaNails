@@ -1,4 +1,5 @@
-import { X, Lock, FileText, User, Clock, Trash2 } from 'lucide-react'
+import { useState } from 'react'
+import { X, Lock, FileText, User, Clock, Trash2, Unlock } from 'lucide-react'
 import type { BloqueoAgenda, Empleada } from '../../types/database'
 import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export default function BloqueoInfoModal({ bloqueo, empleadas, onClose, onDelete }: Props) {
+  const [showConfirm, setShowConfirm] = useState(false)
   const empleada = empleadas.find((e) => e.id === bloqueo.empleada_id)
   
   const dateObj = parseISO(bloqueo.fecha)
@@ -62,10 +64,7 @@ export default function BloqueoInfoModal({ bloqueo, empleadas, onClose, onDelete
 
         <div className="modal-footer" style={{ justifyContent: 'space-between' }}>
           <button 
-            onClick={() => {
-              onDelete(bloqueo.id)
-              onClose() // Optimizamos cerrar de inmediato, AgendaPage igual mostrará el confirm box
-            }} 
+            onClick={() => setShowConfirm(true)} 
             className="btn-danger-ghost"
           >
             <Trash2 size={15} />
@@ -77,6 +76,58 @@ export default function BloqueoInfoModal({ bloqueo, empleadas, onClose, onDelete
           </button>
         </div>
       </div>
+
+      {/* CONFIRM MODAL */}
+      {showConfirm && (
+        <div style={{
+          position: 'absolute',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.4)',
+          borderRadius: 24,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 102,
+          backdropFilter: 'blur(2px)'
+        }} onClick={() => setShowConfirm(false)}>
+          <div style={{
+            background: 'var(--surface)',
+            width: '90%',
+            maxWidth: 360,
+            borderRadius: 20,
+            padding: 30,
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+            border: '1px solid var(--border)',
+            textAlign: 'center'
+          }} onClick={e => e.stopPropagation()}>
+             <div style={{
+              width: 56, height: 56, borderRadius: '50%', 
+              background: 'var(--danger-bg)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 20px'
+            }}>
+              <Unlock size={28} color="var(--danger)" />
+            </div>
+            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 12 }}>¿Eliminar bloqueo?</h3>
+            <p style={{ fontSize: 14, color: 'var(--text-3)', lineHeight: '1.5', marginBottom: 24 }}>
+              Estás a punto de eliminar este bloqueo del <strong style={{ color: 'var(--accent)' }}>{dateStr}</strong>. <br/>Esta acción no se puede deshacer.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button 
+                className="btn-primary" 
+                style={{ background: 'var(--danger)', width: '100%', padding: '12px' }}
+                onClick={() => {
+                  onDelete(bloqueo.id)
+                  onClose()
+                }}
+              >
+                Sí, eliminar bloqueo
+              </button>
+              <button className="btn-secondary" style={{ width: '100%', padding: '12px' }} onClick={() => setShowConfirm(false)}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

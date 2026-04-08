@@ -18,6 +18,7 @@ import FacturacionPage from './pages/FacturacionPage'
 import CajaPage from './pages/CajaPage'
 import VentaDirectaPage from './pages/VentaDirectaPage'
 import HojaPage from './pages/HojaPage'
+import MarketingPage from './pages/MarketingPage'
 import type { Cita } from './types/database'
 
 const queryClient = new QueryClient({
@@ -84,6 +85,7 @@ export default function App() {
           {section === 'caja'          && <CajaPage />}
           {section === 'venta-directa' && <VentaDirectaPage onFinish={() => setSection('inicio')} />}
           {section === 'hoja'          && <HojaPage />}
+          {section === 'marketing'     && <MarketingPage />}
           {section === 'documentos'    && <DocumentosPage />}
           {section === 'estadisticas'  && <EstadisticasPage />}
           {section === 'reportes'      && <ReportesPage />}

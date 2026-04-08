@@ -37,8 +37,13 @@ export default function GestionCitaModal({ cita, onClose, onValidar }: Props) {
   
   // Modules management
   const [manualSlots, setManualSlots] = useState<number | null>(cita.duracion_manual_slots)
+  const [showNotesModal, setShowNotesModal] = useState(false)
+  const [statusConfirm, setStatusConfirm] = useState<CitaStatus | null>(null)
 
+  const isValidated = cita.estado === 'Finalizada' || !!cita.ticket_id
+  const isCancelled = cita.estado === 'Cancelada' || cita.estado === 'No asistió'
   const isPastDate = startOfDay(parseISO(cita.fecha)).getTime() < startOfDay(new Date()).getTime()
+  const isLocked = isPastDate || isValidated || isCancelled
 
   const toggleServicio = (id: string) =>
     setSelected((prev: string[]) => (prev.includes(id) ? prev.filter((x: string) => x !== id) : [...prev, id]))
@@ -124,8 +129,13 @@ export default function GestionCitaModal({ cita, onClose, onValidar }: Props) {
   }
 
   const handleStatus = (estado: CitaStatus) => {
-    if (confirm(`¿Cambiar estado a ${estado}?`)) {
-      handleUpdate({ estado })
+    setStatusConfirm(estado)
+  }
+
+  const confirmStatusChange = () => {
+    if (statusConfirm) {
+      handleUpdate({ estado: statusConfirm })
+      setStatusConfirm(null)
     }
   }
 
@@ -187,8 +197,8 @@ export default function GestionCitaModal({ cita, onClose, onValidar }: Props) {
                       type="button" 
                       onClick={() => toggleServicio(s.id)} 
                       className="cart-item-remove"
-                      disabled={isPastDate}
-                      style={{ cursor: isPastDate ? 'default' : 'pointer' }}
+                      disabled={isLocked}
+                      style={{ cursor: isLocked ? 'default' : 'pointer' }}
                     >
                       <Trash2 size={14} />
                     </button>
@@ -202,11 +212,12 @@ export default function GestionCitaModal({ cita, onClose, onValidar }: Props) {
               <button 
                 className={`btn-action-gray ${isReagendar ? 'active' : ''}`}
                 title="Reagendar cita" 
-                disabled={isPastDate} 
+                disabled={isLocked} 
                 style={{ 
-                  cursor: isPastDate ? 'default' : 'pointer',
+                  cursor: isLocked ? 'default' : 'pointer',
                   color: isReagendar ? 'var(--accent)' : 'inherit',
-                  borderColor: isReagendar ? 'var(--accent)' : 'transparent'
+                  borderColor: isReagendar ? 'var(--accent)' : 'transparent',
+                  opacity: isLocked ? 0.6 : 1
                 }}
                 onClick={() => setIsReagendar(!isReagendar)}
               >
@@ -215,27 +226,48 @@ export default function GestionCitaModal({ cita, onClose, onValidar }: Props) {
               <button 
                 className="btn-action-gray" 
                 onClick={() => handleStatus('Cancelada')}
-                style={{ color: isPastDate ? 'var(--text-3)' : 'var(--danger)', cursor: isPastDate ? 'default' : 'pointer' }}
-                disabled={isPastDate}
+                style={{ color: isLocked ? 'var(--text-3)' : 'var(--danger)', cursor: isLocked ? 'default' : 'pointer', opacity: isLocked ? 0.6 : 1 }}
+                disabled={isLocked}
               >
                 <Trash2 size={15} /> Cancelar
               </button>
-              <button className="btn-action-gray" onClick={() => handleStatus('No asistió')} disabled={isPastDate} style={{ cursor: isPastDate ? 'default' : 'pointer' }}>No asistió</button>
-              <button className="btn-action-gray" onClick={() => {
-                const note = prompt('Añadir/Editar comentario:', comentarios)
-                if (note !== null) setComentarios(note)
-              }} disabled={isPastDate} style={{ cursor: isPastDate ? 'default' : 'pointer' }}>
+              <button 
+                className="btn-action-gray" 
+                onClick={() => handleStatus('No asistió')} 
+                disabled={isLocked} 
+                style={{ cursor: isLocked ? 'default' : 'pointer', opacity: isLocked ? 0.6 : 1 }}
+              >
+                No asistió
+              </button>
+              <button 
+                className="btn-action-gray" 
+                onClick={() => !isLocked && setShowNotesModal(true)} 
+                disabled={isLocked} 
+                style={{ cursor: isLocked ? 'default' : 'pointer', opacity: isLocked ? 0.6 : 1 }}
+              >
                 <MessageSquare size={15} /> Notas
               </button>
               
-              <button 
-                className={`btn-action-validate ${cita.estado === 'Finalizada' ? 'validated' : ''}`}
-                onClick={() => onValidar ? onValidar() : handleStatus('Finalizada')}
-                disabled={saving || isPastDate}
-                style={{ cursor: isPastDate ? 'default' : (saving ? 'wait' : 'pointer') }}
-              >
-                <Check size={18} /> {cita.estado === 'Finalizada' ? 'Cita Validada' : 'Validar Cita'}
-              </button>
+              {(() => {
+                const yaValidada = cita.estado === 'Finalizada' || !!cita.ticket_id
+                return (
+                  <button
+                    className={`btn-action-validate ${yaValidada ? 'validated' : ''}`}
+                    onClick={() => {
+                      if (yaValidada) return
+                      onValidar ? onValidar() : handleStatus('Finalizada')
+                    }}
+                    disabled={saving || isLocked || yaValidada}
+                    style={{
+                      cursor: yaValidada ? 'default' : (isLocked ? 'default' : (saving ? 'wait' : 'pointer')),
+                      opacity: yaValidada ? 0.75 : 1
+                    }}
+                    title={yaValidada ? 'Esta cita ya fue validada y tiene un ticket generado' : 'Validar cita y generar ticket'}
+                  >
+                    <Check size={18} /> {yaValidada ? 'Ya validada' : 'Validar Cita'}
+                  </button>
+                )
+              })()}
 
             </div>
           </div>
@@ -243,69 +275,39 @@ export default function GestionCitaModal({ cita, onClose, onValidar }: Props) {
           {/* RIGHT: EDITING */}
           <div className="modal-side-selection">
             <div className="selection-search-wrap">
-              {isReagendar ? (
-                <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <div style={{ display: 'flex', gap: 12 }}>
-                    <DatePicker 
-                      label="Nueva Fecha"
-                      value={newFecha}
-                      onChange={setNewFecha}
-                    />
-                    <div className="outlined-group">
-                      <label>Nueva Hora</label>
-                      <select 
-                        className="outlined-select"
-                        value={newHora}
-                        onChange={e => setNewHora(e.target.value)}
-                      >
-                        {timeOptions.map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600 }}>
-                      * El cambio se aplicará al guardar todos los cambios.
-                    </div>
-                    <button 
-                      type="button" 
-                      onClick={() => setIsReagendar(false)}
-                      style={{ fontSize: 11, background: 'none', border: 'none', color: 'var(--text-3)', cursor: 'pointer', textDecoration: 'underline' }}
-                    >
-                      Cancelar Reagendada / Volver
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div style={{ position: 'relative', width: '100%' }}>
-                  <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)' }} />
-                  <input 
-                    type="text"
-                    placeholder="Buscar servicio..."
-                    className="selection-search-input"
-                    style={{ paddingLeft: 38, cursor: isPastDate ? 'default' : 'text' }}
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    disabled={isPastDate}
-                  />
-                </div>
-              )}
-            </div>
-
-            <div style={{ padding: '0 20px 15px', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)', minWidth: 80 }}>Profesional:</span>
-              <select 
-                className="form-input" 
-                style={{ fontSize: 13, flex: 1, height: 36, padding: '0 12px', cursor: isPastDate ? 'default' : 'pointer' }}
-                value={empleadaId || ''} 
-                onChange={e => setEmpleadaId(e.target.value)}
-                disabled={isPastDate}
-              >
-                <option value="">Elegir profesional...</option>
-                {empleadas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
-              </select>
+              <div style={{ position: 'relative', width: '100%' }}>
+                <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)' }} />
+                <input 
+                  type="text"
+                  placeholder="Buscar servicio..."
+                  className="selection-search-input"
+                  style={{ paddingLeft: 38, cursor: isLocked ? 'default' : 'text' }}
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  disabled={isLocked}
+                />
+              </div>
             </div>
 
             <div className="selection-services-list">
+              <div style={{ padding: '0 20px 15px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)', minWidth: 80 }}>Profesional:</span>
+                <div 
+                  onClick={() => !isLocked && setIsReagendar(true)}
+                  style={{ 
+                    fontSize: 13, flex: 1, height: 36, padding: '0 12px', 
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    background: 'var(--surface-2)', border: '1px solid var(--border)',
+                    borderRadius: 8, cursor: isLocked ? 'default' : 'pointer',
+                    color: empleadaId ? 'var(--text-1)' : 'var(--text-3)',
+                    opacity: isLocked ? 0.7 : 1
+                  }}
+                >
+                  {empleadas.find(e => e.id === empleadaId)?.nombre || 'Elegir profesional...'}
+                  {!isLocked && <ChevronRight size={14} />}
+                </div>
+              </div>
+
               {Object.entries(groups).map(([familia, items]: [string, Servicio[]]) => (
                 <div key={familia} style={{ marginBottom: 20 }}>
                   <div className="servicio-familia" style={{ marginBottom: 8 }}>{familia}</div>
@@ -318,8 +320,8 @@ export default function GestionCitaModal({ cita, onClose, onValidar }: Props) {
                           type="button"
                           onClick={() => toggleServicio(s.id)}
                           className={`servicio-btn ${isAdded ? 'active' : ''}`}
-                          style={{ padding: '10px 14px', cursor: isPastDate ? 'default' : 'pointer' }}
-                          disabled={isPastDate}
+                          style={{ padding: '10px 14px', cursor: isLocked ? 'default' : 'pointer' }}
+                          disabled={isLocked}
                         >
                           <div className="servicio-btn-inner">
                             <span style={{ fontSize: 13 }}>{s.nombre}</span>
@@ -346,23 +348,23 @@ export default function GestionCitaModal({ cita, onClose, onValidar }: Props) {
                       <button 
                         type="button" 
                         className="btn-ghost" 
-                        style={{ padding: 2, cursor: isPastDate ? 'default' : 'pointer' }}
+                        style={{ padding: 2, cursor: (isLocked || isValidated) ? 'default' : 'pointer' }}
                         onClick={() => setManualSlots(Math.max(1, (manualSlots ?? autoSlots) - 1))}
-                        disabled={isPastDate}
+                        disabled={isLocked || isValidated}
                       >
-                        <ChevronLeft size={16} color={isPastDate ? 'var(--text-3)' : 'var(--accent)'} />
+                        <ChevronLeft size={16} color={(isLocked || isValidated) ? 'var(--text-3)' : 'var(--accent)'} />
                       </button>
-                      <span style={{ fontSize: 15, fontWeight: 700, minWidth: 20, textAlign: 'center', color: isPastDate ? 'var(--text-3)' : 'inherit' }}>
+                      <span style={{ fontSize: 15, fontWeight: 700, minWidth: 20, textAlign: 'center', color: (isLocked || isValidated) ? 'var(--text-3)' : 'inherit' }}>
                         {manualSlots ?? autoSlots}
                       </span>
                       <button 
                         type="button" 
                         className="btn-ghost" 
-                        style={{ padding: 2, cursor: isPastDate ? 'default' : 'pointer' }}
+                        style={{ padding: 2, cursor: (isLocked || isValidated) ? 'pointer' : 'pointer' }}
                         onClick={() => setManualSlots((manualSlots ?? autoSlots) + 1)}
-                        disabled={isPastDate}
+                        disabled={isLocked || isValidated}
                       >
-                        <ChevronRight size={16} color={isPastDate ? 'var(--text-3)' : 'var(--accent)'} />
+                        <ChevronRight size={16} color={(isLocked || isValidated) ? 'var(--text-3)' : 'var(--accent)'} />
                       </button>
                     </div>
                   </div>
@@ -372,8 +374,8 @@ export default function GestionCitaModal({ cita, onClose, onValidar }: Props) {
                   {manualSlots !== null && (
                      <button 
                        onClick={() => setManualSlots(null)} 
-                       style={{ fontSize: 10, color: isPastDate ? 'var(--text-3)' : 'var(--accent)', background: 'none', border: 'none', padding: 0, cursor: isPastDate ? 'default' : 'pointer' }}
-                       disabled={isPastDate}
+                       style={{ fontSize: 10, color: isLocked ? 'var(--text-3)' : 'var(--accent)', background: 'none', border: 'none', padding: 0, cursor: isLocked ? 'default' : 'pointer' }}
+                       disabled={isLocked}
                      >
                        Restablecer
                      </button>
@@ -384,21 +386,215 @@ export default function GestionCitaModal({ cita, onClose, onValidar }: Props) {
                     <div style={{ color: 'var(--danger)', fontSize: 11, fontWeight: 700, marginRight: 10 }}> Profesional ocupada</div>
                   )}
                   <button type="button" onClick={onClose} className="btn-ghost" style={{ cursor: 'pointer' }}>Salir</button>
-                  <button 
-                    type="button" 
-                    onClick={() => handleUpdate()} 
-                    disabled={saving || !selected.length || !empleadaId || isPastDate || hasOverlap} 
-                    className="btn-primary"
-                    style={{ cursor: isPastDate ? 'default' : (saving ? 'wait' : 'pointer') }}
-                  >
-                    {saving ? 'Guardando...' : 'Guardar Cambios'}
-                  </button>
+                  {!isValidated && (
+                    <button 
+                      type="button" 
+                      onClick={() => handleUpdate()} 
+                      disabled={saving || !selected.length || !empleadaId || isLocked || hasOverlap} 
+                      className="btn-primary"
+                      style={{ cursor: isLocked ? 'default' : (saving ? 'wait' : 'pointer') }}
+                    >
+                      {saving ? 'Guardando...' : 'Guardar Cambios'}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+      {/* SUB-MODAL: NOTAS */}
+      {showNotesModal && (
+        <div style={{
+          position: 'absolute',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.4)',
+          borderRadius: 24,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100,
+          backdropFilter: 'blur(2px)'
+        }} onClick={() => setShowNotesModal(false)}>
+          <div style={{
+            background: 'var(--surface)',
+            width: '90%',
+            maxWidth: 400,
+            borderRadius: 20,
+            padding: 24,
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+            border: '1px solid var(--border)'
+          }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <MessageSquare size={18} color="var(--accent)" /> Notas de la cita
+            </h3>
+            <textarea
+              autoFocus
+              value={comentarios}
+              onChange={e => setComentarios(e.target.value)}
+              placeholder="Escribe aquí notas internas, alergias o detalles sobre el servicio..."
+              style={{
+                width: '100%',
+                height: 150,
+                background: 'var(--surface-2)',
+                border: '1px solid var(--border)',
+                borderRadius: 12,
+                padding: 12,
+                fontSize: 13,
+                resize: 'none',
+                outline: 'none',
+                color: 'var(--text-1)',
+                marginBottom: 20
+              }}
+            />
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button className="btn-secondary" onClick={() => setShowNotesModal(false)}>Cancelar</button>
+              <button className="btn-primary" onClick={() => setShowNotesModal(false)}>Aceptar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SUB-MODAL: REAGENDAR */}
+      {isReagendar && (
+        <div style={{
+          position: 'absolute',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.4)',
+          borderRadius: 24,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 101,
+          backdropFilter: 'blur(2px)'
+        }} onClick={() => setIsReagendar(false)}>
+          <div style={{
+            background: 'var(--surface)',
+            width: '90%',
+            maxWidth: 450,
+            borderRadius: 20,
+            padding: 24,
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+            border: '1px solid var(--border)'
+          }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Calendar size={18} color="var(--accent)" /> Reagendar Cita
+            </h3>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <DatePicker 
+                    label="Nueva Fecha"
+                    value={newFecha}
+                    onChange={setNewFecha}
+                  />
+                </div>
+                <div className="outlined-group" style={{ flex: 1 }}>
+                  <label>Nueva Hora</label>
+                  <select 
+                    className="outlined-select"
+                    value={newHora}
+                    onChange={e => setNewHora(e.target.value)}
+                    style={{ height: 40 }}
+                  >
+                    {timeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', display: 'block', marginBottom: 6, textTransform: 'uppercase' }}>Profesional</label>
+                <select 
+                  className="form-input" 
+                  style={{ height: 42, fontSize: 14 }}
+                  value={empleadaId || ''} 
+                  onChange={e => setEmpleadaId(e.target.value)}
+                >
+                  <option value="">Elegir profesional...</option>
+                  {empleadas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+                </select>
+              </div>
+
+              {hasOverlap && (
+                <div style={{ 
+                  background: 'var(--danger-bg)', 
+                  color: 'var(--danger)', 
+                  padding: '10px 12px', 
+                  borderRadius: 8, 
+                  fontSize: 12, 
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8
+                }}>
+                  <X size={14} /> La profesional ya tiene una cita en ese horario.
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button className="btn-secondary" onClick={() => setIsReagendar(false)}>Cancelar</button>
+              <button 
+                className="btn-primary" 
+                onClick={() => setIsReagendar(false)}
+                disabled={hasOverlap || !empleadaId}
+              >
+                Actualizar Horario
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SUB-MODAL: CONFIRMACIÓN DE ESTADO */}
+      {statusConfirm && (
+        <div style={{
+          position: 'absolute',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.4)',
+          borderRadius: 24,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 102,
+          backdropFilter: 'blur(2px)'
+        }} onClick={() => setStatusConfirm(null)}>
+          <div style={{
+            background: 'var(--surface)',
+            width: '90%',
+            maxWidth: 360,
+            borderRadius: 20,
+            padding: 30,
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+            border: '1px solid var(--border)',
+            textAlign: 'center'
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{
+              width: 56, height: 56, borderRadius: '50%', 
+              background: statusConfirm === 'Cancelada' ? 'var(--danger-bg)' : 'var(--accent-light)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 20px'
+            }}>
+              {statusConfirm === 'Cancelada' ? <Trash2 size={28} color="var(--danger)" /> : <Clock size={28} color="var(--accent)" />}
+            </div>
+            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 12 }}>¿Confirmar cambio?</h3>
+            <p style={{ fontSize: 14, color: 'var(--text-3)', lineHeight: '1.5', marginBottom: 24 }}>
+              Estás a punto de marcar esta cita como <strong style={{ color: 'var(--text-1)' }}>{statusConfirm}</strong>. <br/>¿Deseas continuar?
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button 
+                className="btn-primary" 
+                style={{ background: statusConfirm === 'Cancelada' ? 'var(--danger)' : 'var(--accent)', width: '100%', padding: '12px' }}
+                onClick={confirmStatusChange}
+              >
+                Sí, cambiar estado
+              </button>
+              <button className="btn-secondary" style={{ width: '100%', padding: '12px' }} onClick={() => setStatusConfirm(null)}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

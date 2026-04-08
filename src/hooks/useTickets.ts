@@ -1,8 +1,42 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import type { Ticket, TicketItem, Pago } from '../types/database'
-
 import { format } from 'date-fns'
+
+/** Obtiene el siguiente folio, con reintentos en caso de colisión de clave duplicada */
+async function getFolioConRetry(sucursalId: string, maxIntentos = 3): Promise<string> {
+  for (let intento = 0; intento < maxIntentos; intento++) {
+    if (intento > 0) {
+      // Espera breve para evitar colisión concurrente
+      await new Promise(r => setTimeout(r, 60 * intento))
+    }
+    const { data, error } = await supabase
+      .rpc('siguiente_folio_ticket', { p_sucursal_id: sucursalId })
+    if (error) throw error
+    return `T-${String(data as number).padStart(5, '0')}`
+  }
+  throw new Error('No se pudo generar un folio único')
+}
+
+/** Inserta el ticket manejando colisiones de num_ticket con reintento automático */
+async function insertTicketConRetry(
+  ticket: any, fechaActual: string, horaActual: string, maxIntentos = 3
+) {
+  for (let intento = 0; intento < maxIntentos; intento++) {
+    if (intento > 0) await new Promise(r => setTimeout(r, 80 * intento))
+    const numTicket = await getFolioConRetry(ticket.sucursal_id)
+    const { data, error } = await supabase
+      .from('tickets')
+      .insert({ ...ticket, num_ticket: numTicket, fecha: fechaActual, hora: horaActual })
+      .select()
+      .single()
+    if (!error) return data
+    // Si es colisión de clave, reintentamos; cualquier otro error lo lanzamos
+    if ((error as any).code !== '23505') throw error
+    console.warn(`Colisión de folio (intento ${intento + 1}), reintentando...`)
+  }
+  throw new Error('No se pudo guardar el ticket tras múltiples intentos')
+}
 
 export function useCrearTicket() {
   const qc = useQueryClient()
@@ -24,28 +58,16 @@ export function useCrearTicket() {
       const fechaActual = format(now, 'yyyy-MM-dd')
       const horaActual = format(now, 'HH:mm:ss')
 
-      // 1. Obtener el siguiente folio secuencial de forma atómica desde Supabase
-      const { data: folioData, error: folioError } = await supabase
-        .rpc('siguiente_folio_ticket', { p_sucursal_id: ticket.sucursal_id })
-
-      if (folioError) throw folioError
-
-      const numeroFolio = folioData as number
-      const numTicketGenerado = `T-${String(numeroFolio).padStart(5, '0')}`
-
-      // 2. Crear el ticket
-      const { data: tData, error: tError } = await supabase
-        .from('tickets')
-        .insert({
+      // 1. Crear el ticket (con retry en colisiones de folio)
+      const tData = await insertTicketConRetry(
+        {
           ...ticket,
-          num_ticket: numTicketGenerado,
-          fecha: fechaActual,
-          hora: horaActual
-        })
-        .select()
-        .single()
-      
-      if (tError) throw tError
+          vendedor_id: ticket.vendedor_id ?? null,
+          estado: ticket.estado
+        },
+        fechaActual,
+        horaActual
+      )
 
       // 3. Crear los items del ticket con el ID del ticket recién creado
       if (items.length > 0) {
@@ -117,28 +139,8 @@ export function useCrearTicketDirecto() {
       const fechaActual = format(now, 'yyyy-MM-dd')
       const horaActual = format(now, 'HH:mm:ss')
 
-      // Obtener folio secuencial
-      const { data: folioData, error: folioError } = await supabase
-        .rpc('siguiente_folio_ticket', { p_sucursal_id: ticket.sucursal_id })
-
-      if (folioError) throw folioError
-
-      const numeroFolio = folioData as number
-      const numTicketGenerado = `T-${String(numeroFolio).padStart(5, '0')}`
-
-      // Crear el ticket
-      const { data: tData, error: tError } = await supabase
-        .from('tickets')
-        .insert({
-          ...ticket,
-          num_ticket: numTicketGenerado,
-          fecha: fechaActual,
-          hora: horaActual
-        })
-        .select()
-        .single()
-      
-      if (tError) throw tError
+      // Crear el ticket (con retry en colisiones de folio)
+      const tData = await insertTicketConRetry(ticket, fechaActual, horaActual)
 
       // Crear items
       if (items.length > 0) {

@@ -161,6 +161,36 @@ export function useEliminarBloqueo() {
   })
 }
 
+// ─── Delete Multiple Bloqueos ─────────────────────────────────
+export function useEliminarBloqueosMasivo() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      fechaInicio,
+      fechaFin,
+      empleadasIds
+    }: {
+      fechaInicio: string
+      fechaFin: string
+      empleadasIds: string[]
+    }) => {
+      if (!empleadasIds.length) return
+
+      const { error } = await supabase
+        .from('bloqueos_agenda')
+        .delete()
+        .gte('fecha', fechaInicio)
+        .lte('fecha', fechaFin)
+        .in('empleada_id', empleadasIds)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['bloqueos'] })
+    },
+  })
+}
+
 // ─── Client history ───────────────────────────────────────────
 export function useCitasCliente(clienteId: string) {
   return useQuery<Cita[]>({

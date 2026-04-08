@@ -9,6 +9,7 @@ import NuevaCitaModal from '../components/Citas/NuevaCitaModal'
 import GestionCitaModal from '../components/Citas/GestionCitaModal'
 import BloqueoModal from '../components/Agenda/BloqueoModal'
 import BloqueoInfoModal from '../components/Agenda/BloqueoInfoModal'
+import DesbloqueoModal from '../components/Agenda/DesbloqueoModal'
 import { useSucursales } from '../hooks/useSucursales'
 import { useEmpleadas } from '../hooks/useEmpleadas'
 import { useCitasSemana, useBloqueosSemana, useEliminarBloqueo } from '../hooks/useCitas'
@@ -22,6 +23,7 @@ type Modal =
   | { type: 'nueva-cita';   slot: SlotInfo; cliente: Cliente }
   | { type: 'gestion';      cita: Cita }
   | { type: 'bloquear' }
+  | { type: 'desbloquear' }
   | { type: 'bloqueo-info'; bloqueo: BloqueoAgenda }
 
 function getWeekDates(weekStart: Date): Date[] {
@@ -93,7 +95,6 @@ export default function AgendaPage({ preselectedCliente, onClearPreselected, onV
   const closeModal = () => setModal({ type: 'none' })
 
   const handleDeleteBloqueo = async (id: string) => {
-    if (!confirm('¿Deseas eliminar este bloqueo?')) return
     try {
       await eliminarBloqueo.mutateAsync(id)
     } catch (err) {
@@ -143,13 +144,22 @@ export default function AgendaPage({ preselectedCliente, onClearPreselected, onV
         </div>
 
         <div className="page-header-actions">
-          <button 
-            className="btn-primary" 
-            style={{ padding: '8px 14px', fontSize: 13 }}
-            onClick={() => setModal({ type: 'bloquear' })}
-          >
-            Bloquear Horario
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button 
+              className="btn-secondary" 
+              style={{ padding: '8px 14px', fontSize: 13, background: 'var(--surface)', border: '1px solid var(--border)' }}
+              onClick={() => setModal({ type: 'desbloquear' })}
+            >
+              Desbloqueo Masivo
+            </button>
+            <button 
+              className="btn-primary" 
+              style={{ padding: '8px 14px', fontSize: 13 }}
+              onClick={() => setModal({ type: 'bloquear' })}
+            >
+              Bloquear Horario
+            </button>
+          </div>
 
           {/* Sucursal */}
           <select
@@ -225,6 +235,12 @@ export default function AgendaPage({ preselectedCliente, onClearPreselected, onV
 
       {modal.type === 'bloquear' && (
         <BloqueoModal
+          empleadas={empleadas}
+          onClose={closeModal}
+        />
+      )}
+      {modal.type === 'desbloquear' && (
+        <DesbloqueoModal
           empleadas={empleadas}
           onClose={closeModal}
         />

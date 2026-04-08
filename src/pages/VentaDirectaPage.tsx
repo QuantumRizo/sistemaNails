@@ -8,15 +8,16 @@ import { useCrearTicketDirecto } from '../hooks/useTickets'
 import { useProductos } from '../hooks/useProductos'
 import { useServicios } from '../hooks/useServicios'
 import { useSucursales } from '../hooks/useSucursales'
-import type { TicketItem, Pago, Producto, Servicio } from '../types/database'
+import type { TicketItem, Pago, Producto, Servicio, Sucursal } from '../types/database'
 import PagoModal from '../components/Citas/PagoModal'
+import TicketPrintView from '../components/Citas/TicketPrintView'
 import { useToast } from '../components/Common/Toast'
 
 interface Props {
   onFinish?: () => void
 }
 
-export default function VentaDirectaPage({ onFinish }: Props) {
+export default function VentaDirectaPage({ onFinish: _onFinish }: Props) {
   const { data: empleadas = [] } = useTodasEmpleadas()
   const { data: sucursales = [] } = useSucursales()
   const crearTicket = useCrearTicketDirecto()
@@ -30,6 +31,14 @@ export default function VentaDirectaPage({ onFinish }: Props) {
   const [items, setItems] = useState<TicketItem[]>([])
   const [pagos, setPagos] = useState<Pago[]>([])
   const [showPagoModal, setShowPagoModal] = useState(false)
+
+  // Para la vista de impresión post-venta
+  const [ticketGuardado, setTicketGuardado] = useState(false)
+  const [numTicketFinal, setNumTicketFinal] = useState('')
+  const [ticketSnapshot, setTicketSnapshot] = useState<{
+    items: TicketItem[]; pagos: Pago[]; subtotal: number; total: number;
+    descuento: number; sucursal: Sucursal | null; vendedorNombre: string
+  } | null>(null)
 
   // Modales de selección
   const [showServicioModal, setShowServicioModal] = useState(false)
@@ -46,9 +55,7 @@ export default function VentaDirectaPage({ onFinish }: Props) {
   const [descuentoInput, setDescuentoInput] = useState('')
   const [descuentoGlobal, setDescuentoGlobal] = useState(0)
 
-  // Ticket guardado
-  const [ticketGuardado, setTicketGuardado] = useState(false)
-  const [numTicketFinal, setNumTicketFinal] = useState('')
+
 
   const { data: allProducts = [] } = useProductos()
   const { data: allServicios = [] } = useServicios()
@@ -166,6 +173,11 @@ export default function VentaDirectaPage({ onFinish }: Props) {
           detalles: p.detalles
         }))
       })
+
+      // Guardar snapshot para la vista de impresión
+      const sucursalObj = sucursales.find(s => s.id === sucursalId) || null
+      const vendedorNombre = empleadas.find(e => e.id === vendedorId)?.nombre || ''
+      setTicketSnapshot({ items, pagos, subtotal, total, descuento: descuentoGlobal, sucursal: sucursalObj, vendedorNombre })
       setNumTicketFinal(tData.num_ticket)
       setTicketGuardado(true)
     } catch (err) {
@@ -176,7 +188,7 @@ export default function VentaDirectaPage({ onFinish }: Props) {
     }
   }
 
-  const handleNuevavVenta = () => {
+  const handleNuevaVenta = () => {
     setItems([])
     setPagos([])
     setPropina(0)
@@ -185,28 +197,47 @@ export default function VentaDirectaPage({ onFinish }: Props) {
     setVendedorId('')
     setTicketGuardado(false)
     setNumTicketFinal('')
+    setTicketSnapshot(null)
   }
 
-  if (ticketGuardado) {
+  if (ticketGuardado && ticketSnapshot) {
+    const fechaStr = new Date().toLocaleString('es-MX', { hour12: true })
+    // Construir un objeto cita-simulado para TicketPrintView
+    const citaSimulada: any = {
+      id: '',
+      cliente_id: null,
+      empleada_id: vendedorId || null,
+      sucursal_id: sucursalId,
+      fecha: new Date().toISOString().split('T')[0],
+      bloque_inicio: '',
+      estado: 'Finalizada',
+      created_at: new Date().toISOString(),
+      cliente: clienteNombre ? { nombre_completo: clienteNombre } : null,
+      sucursal: ticketSnapshot.sucursal,
+      servicios: []
+    }
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', gap: 20 }}>
-        <div style={{ textAlign: 'center', padding: 40, background: 'var(--surface)', borderRadius: 20, border: '1px solid var(--border)', maxWidth: 420 }}>
-          <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'var(--success-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-            <Printer size={32} color="var(--success)" />
-          </div>
-          <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>¡Venta completada!</h2>
-          <p style={{ color: 'var(--text-3)', fontSize: 14, marginBottom: 24 }}>Ticket <strong>{numTicketFinal}</strong> generado correctamente.</p>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-            <button className="btn-secondary" onClick={handleNuevavVenta}>Nueva Venta</button>
-            <button className="btn-primary" onClick={() => window.print()}>
-              <Printer size={16} /> Imprimir
-            </button>
-          </div>
-          {onFinish && (
-            <button className="btn-secondary" onClick={onFinish} style={{ marginTop: 12, width: '100%' }}>
-              Volver al Inicio
-            </button>
-          )}
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto', background: 'var(--bg)' }}>
+        <TicketPrintView
+          cita={citaSimulada}
+          ticketData={{
+            numTicket: numTicketFinal,
+            fechaStr,
+            vendedor: ticketSnapshot.vendedorNombre,
+            items: ticketSnapshot.items,
+            subtotal: ticketSnapshot.subtotal,
+            iva: ticketSnapshot.subtotal - ticketSnapshot.subtotal / 1.16,
+            total: ticketSnapshot.total,
+            descuento: ticketSnapshot.descuento,
+            pagos: ticketSnapshot.pagos,
+            pendiente: Math.max(0, ticketSnapshot.total - ticketSnapshot.pagos.reduce((s, p) => s + p.importe, 0))
+          }}
+        />
+        <div style={{ padding: 20, display: 'flex', gap: 15, justifyContent: 'center' }}>
+          <button className="btn-secondary" onClick={handleNuevaVenta}>Nueva Venta</button>
+          <button className="btn-primary" onClick={() => window.print()} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Printer size={18} /> Imprimir Ticket
+          </button>
         </div>
       </div>
     )

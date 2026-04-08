@@ -1,7 +1,7 @@
-import { Home, Calendar, Users, Briefcase, BarChart2, Package, Wallet, FileDown, FolderOpen, Receipt, ShoppingCart, ClipboardList } from 'lucide-react'
+import { Home, Calendar, Users, Briefcase, BarChart2, Package, Wallet, FileDown, FolderOpen, Receipt, ShoppingCart, ClipboardList, Megaphone } from 'lucide-react'
 import { useSucursales } from '../../hooks/useSucursales'
 
-export type Section = 'inicio' | 'agenda' | 'clientes' | 'inventario' | 'documentos' | 'configuracion' | 'validacion' | 'cobro' | 'estadisticas' | 'reportes' | 'facturacion' | 'caja' | 'venta-directa' | 'hoja'
+export type Section = 'inicio' | 'agenda' | 'clientes' | 'inventario' | 'documentos' | 'configuracion' | 'validacion' | 'cobro' | 'estadisticas' | 'reportes' | 'facturacion' | 'caja' | 'venta-directa' | 'hoja' | 'marketing'
 
 interface Props {
   current: Section
@@ -20,6 +20,7 @@ const items: { id: Section; label: string; Icon: any }[] = [
   { id: 'inventario',     label: 'Inventario',     Icon: Package      },
   { id: 'facturacion',    label: 'Facturación',    Icon: Receipt      },
   { id: 'caja',           label: 'Caja',           Icon: Wallet       },
+  { id: 'marketing',      label: 'Marketing',      Icon: Megaphone    },
   { id: 'documentos',     label: 'Documentos',     Icon: FolderOpen   },
 ]
 
