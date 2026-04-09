@@ -9,6 +9,10 @@ import InventarioPage from './pages/InventarioPage'
 import DocumentosPage from './pages/DocumentosPage'
 import type { Cliente } from './types/database'
 
+import { AuthProvider, useAuthContext } from './context/AuthContext'
+import LoginPage from './pages/LoginPage'
+import { RefreshCw } from 'lucide-react'
+
 import EstadisticasPage from "./pages/EstadisticasPage"
 import InicioPage from "./pages/InicioPage"
 import ValidacionPage from './pages/ValidacionPage'
@@ -19,23 +23,35 @@ import CajaPage from './pages/CajaPage'
 import VentaDirectaPage from './pages/VentaDirectaPage'
 import HojaPage from './pages/HojaPage'
 import MarketingPage from './pages/MarketingPage'
+import SeguridadPage from './pages/SeguridadPage'
 import type { Cita } from './types/database'
 
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: 1, staleTime: 1000 * 30 } },
+  defaultOptions: { queries: { retry: 1, staleTime: 0 } },
 })
 
-export default function App() {
+function AppContent() {
+  const { session, loading } = useAuthContext()
   const [section, setSection] = useState<Section>('inicio')
   const [pendingClient, setPendingClient] = useState<Cliente | null>(null)
   
-  // Checkout flow states
   const [validatingCita, setValidatingCita] = useState<Cita | null>(null)
   const [ticketCita, setTicketCita] = useState<Cita | null>(null)
 
+  if (loading) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
+        <RefreshCw size={32} className="animate-spin" style={{ color: 'var(--accent)' }} />
+      </div>
+    )
+  }
+
+  if (!session) {
+    return <LoginPage />
+  }
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <ToastProvider>
+    <ToastProvider>
       <div className="app-shell">
         <Sidebar current={section} onChange={setSection} />
         <div className="main-area">
@@ -91,9 +107,19 @@ export default function App() {
           {section === 'reportes'      && <ReportesPage />}
           {section === 'facturacion'   && <FacturacionPage />}
           {section === 'configuracion' && <ProfesionalesPage />}
+          {section === 'seguridad'     && <SeguridadPage />}
         </div>
       </div>
-      </ToastProvider>
+    </ToastProvider>
+  )
+}
+
+export default function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider queryClient={queryClient}>
+        <AppContent />
+      </AuthProvider>
     </QueryClientProvider>
   )
 }

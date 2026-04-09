@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react'
 import { FileDown, Calendar } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Sucursal } from '../types/database'
-import { downloadComisionesCSV, downloadResumenVentasCSV } from '../lib/exportReports'
+import { downloadComisionesCSV, downloadResumenVentasCSV, downloadLiquidacionComisionesCSV } from '../lib/exportReports'
 import { useToast } from '../components/Common/Toast'
 
 export default function ReportesPage() {
-  const [reportType, setReportType] = useState('comisiones')
+  const [reportType, setReportType] = useState('liquidacion')
   const [fechaInicio, setFechaInicio] = useState(() => {
     const d = new Date()
     d.setDate(1)
@@ -27,7 +27,9 @@ export default function ReportesPage() {
   const handleExport = async () => {
     setExporting(true)
     try {
-      if (reportType === 'comisiones') {
+      if (reportType === 'liquidacion') {
+        await downloadLiquidacionComisionesCSV(fechaInicio, fechaFin)
+      } else if (reportType === 'comisiones') {
         await downloadComisionesCSV(fechaInicio, fechaFin, sucursalId)
       } else if (reportType === 'ventas') {
         await downloadResumenVentasCSV(fechaInicio, fechaFin, sucursalId === 'all' ? sucursales.map(s => s.id) : [sucursalId])
@@ -55,6 +57,20 @@ export default function ReportesPage() {
           <div className="filter-group-box" style={{ marginBottom: 20 }}>
             <div className="filter-box-label">Tipo de Reporte</div>
             <div className="filter-box-content">
+              <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, cursor: 'pointer' }}>
+                <input 
+                  type="radio" 
+                  name="reportType" 
+                  value="liquidacion" 
+                  checked={reportType === 'liquidacion'} 
+                  onChange={e => setReportType(e.target.value)} 
+                />
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>Liquidación de Comisiones (Financiero)</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-3)' }}>Reporte detallado de comisiones según ventas, tramos y hoja de evaluación.</div>
+                </div>
+              </label>
+
               <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, cursor: 'pointer' }}>
                 <input 
                   type="radio" 

@@ -150,7 +150,7 @@ export default function AgendaPage({ preselectedCliente, onClearPreselected, onV
               style={{ padding: '8px 14px', fontSize: 13, background: 'var(--surface)', border: '1px solid var(--border)' }}
               onClick={() => setModal({ type: 'desbloquear' })}
             >
-              Desbloqueo Masivo
+              Desbloqueo Horarios Masivo
             </button>
             <button 
               className="btn-primary" 

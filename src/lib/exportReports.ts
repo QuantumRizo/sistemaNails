@@ -150,6 +150,8 @@ export async function downloadResumenVentasCSV(fechaInicio: string, fechaFin: st
 }
 
 
+import { calcularPorcentaje, getTramoStr } from './commissions'
+
 function downloadBlob(csvContent: string, fileName: string) {
   const BOM = '\uFEFF'
   const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' })
@@ -160,4 +162,100 @@ function downloadBlob(csvContent: string, fileName: string) {
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
+}
+
+export async function downloadLiquidacionComisionesCSV(fechaInicio: string, fechaFin: string) {
+  // Extraer mes y año de la fecha de inicio para buscar las hojas
+  // (Asumimos reporte mensual natural para que conecte con las evaluaciones de hoja)
+  const dateStr = fechaInicio.split('-')
+  const anio = parseInt(dateStr[0], 10)
+  const mes = parseInt(dateStr[1], 10)
+
+  // 1. Traer todos los items pagados en el reporte (sin filtrar sucursal para este CSV general)
+  const { data: items, error: itemsErr } = await supabase
+    .from('ticket_items')
+    .select(`
+      vendedor_id,
+      vendedor_nombre,
+      total,
+      ticket:tickets!inner(fecha, estado)
+    `)
+    .eq('ticket.estado', 'Pagado')
+    .gte('ticket.fecha', fechaInicio)
+    .lte('ticket.fecha', fechaFin)
+
+  if (itemsErr) throw itemsErr
+
+  // 2. Traer hojas de evaluación del mes
+  const { data: evals, error: evalsErr } = await supabase
+    .from('evaluaciones_hoja')
+    .select('empleada_id, cumplio_hoja')
+    .eq('mes', mes)
+    .eq('anio', anio)
+
+  if (evalsErr) throw evalsErr
+
+  // 3. Traer nombres reales de empleadas
+  const { data: emps, error: empsErr } = await supabase
+    .from('perfiles_empleadas')
+    .select('id, nombre')
+    .eq('activo', true)
+
+  if (empsErr) throw empsErr
+
+  // Agrupar
+  const acum: Record<string, { totalConIva: number; nombre: string }> = {}
+  ;(items as any[]).forEach(item => {
+    const vid = item.vendedor_id
+    if (!vid) return
+    const totalItem = Number(item.total) || 0
+    if (!acum[vid]) {
+      acum[vid] = { totalConIva: 0, nombre: item.vendedor_nombre || 'Sin nombre' }
+    }
+    acum[vid].totalConIva += totalItem
+  })
+
+  emps?.forEach((e: any) => {
+    if (acum[e.id]) acum[e.id].nombre = e.nombre
+  })
+
+  const evalMap: Record<string, boolean> = {}
+  ;(evals as any[]).forEach(ev => {
+    if (ev.cumplio_hoja) evalMap[ev.empleada_id] = true
+    else if (!(ev.empleada_id in evalMap)) evalMap[ev.empleada_id] = false
+  })
+
+  // Calcular tabla final
+  const resultados = Object.entries(acum).map(([empId, datos]) => {
+    const cumplioHoja = evalMap[empId] ?? false
+    const totalConIva = datos.totalConIva
+    const totalSinIva = totalConIva / 1.16
+    const porcentaje = calcularPorcentaje(totalConIva, cumplioHoja)
+    const comision = (totalSinIva * porcentaje) / 100
+    const tramoStr = getTramoStr(totalConIva)
+
+    return {
+      nombre: datos.nombre,
+      cumplioHoja: cumplioHoja ? 'Sí' : 'No',
+      totalConIva: totalConIva.toFixed(2),
+      totalSinIva: totalSinIva.toFixed(2),
+      tramoStr: tramoStr,
+      porcentaje: porcentaje.toFixed(1) + '%',
+      comision: comision.toFixed(2)
+    }
+  })
+
+  resultados.sort((a, b) => Number(b.comision) - Number(a.comision))
+
+  // 4. Construir CSV
+  const headers = ['Profesional', 'Cumplió Hoja', 'Ventas c/IVA ($)', 'Base s/IVA ($)', 'Tramo Logrado', '% Aplicado', 'Comisión ($)']
+  
+  const csvRows = resultados.map(r => {
+    return [
+      r.nombre, r.cumplioHoja, r.totalConIva, r.totalSinIva, r.tramoStr, r.porcentaje, r.comision
+    ].map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')
+  })
+
+  const csvContent = [headers.map(h => `"${h}"`).join(','), ...csvRows].join('\n')
+  downloadBlob(csvContent, `Liquidacion_Comisiones_${fechaInicio}_al_${fechaFin}.csv`)
 }

@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react'
 import { CheckSquare, Square, ChevronLeft, ChevronRight, FileCheck, User, Save, TrendingUp, AlertCircle } from 'lucide-react'
 import { useEmpleadas } from '../hooks/useEmpleadas'
-import { useEvaluacionesHoja, useGuardarEvaluacion, useComisionesHoja, TABLA_COMISION } from '../hooks/useHoja'
+import { useEvaluacionesHoja, useGuardarEvaluacion, useComisionesHoja } from '../hooks/useHoja'
+import { TABLA_COMISION } from '../lib/commissions'
 import { useToast } from '../components/Common/Toast'
 
 const MESES = [
