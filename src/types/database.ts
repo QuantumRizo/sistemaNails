@@ -22,6 +22,9 @@ export interface Empleada {
   nombre: string
   nombre_corto?: string // Deprecated
   activo: boolean
+  fecha_contratacion?: string
+  sueldo_diario?: number
+  dias_descanso?: string[]
 }
 
 
@@ -61,7 +64,8 @@ export interface Producto {
   id: string
   nombre: string
   descripcion: string | null
-  precio: number
+  precio_costo?: number
+  precio: number // Precio de venta
   stock: number
   sku: string | null
   activo: boolean

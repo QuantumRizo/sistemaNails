@@ -70,7 +70,8 @@ export default function InventarioPage() {
               <tr>
                 <th>Producto</th>
                 <th>SKU</th>
-                <th style={{ textAlign: 'right' }}>Precio</th>
+                <th style={{ textAlign: 'right' }}>Costo</th>
+                <th style={{ textAlign: 'right' }}>Venta</th>
                 <th style={{ textAlign: 'right' }}>Stock Disponible</th>
                 <th style={{ textAlign: 'center' }}>Estado</th>
                 <th style={{ textAlign: 'right' }}>Acciones</th>
@@ -84,7 +85,8 @@ export default function InventarioPage() {
                     {p.descripcion && <div style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 2 }}>{p.descripcion}</div>}
                   </td>
                   <td>{p.sku || '—'}</td>
-                  <td style={{ textAlign: 'right' }}>${p.precio.toFixed(2)}</td>
+                  <td style={{ textAlign: 'right', color: 'var(--text-3)' }}>${(p.precio_costo || 0).toFixed(2)}</td>
+                  <td style={{ textAlign: 'right', fontWeight: 600 }}>${p.precio.toFixed(2)}</td>
                   <td style={{ textAlign: 'right' }}>
                     <span style={{ 
                       fontWeight: p.stock <= 5 ? 700 : 500, 

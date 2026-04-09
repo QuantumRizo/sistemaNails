@@ -18,6 +18,7 @@ export default function FormularioProducto({ productoBase, onClose }: Props) {
   const [form, setForm] = useState({
     nombre: productoBase?.nombre || '',
     sku: productoBase?.sku || '',
+    precio_costo: productoBase?.precio_costo?.toString() || '0',
     precio: productoBase?.precio?.toString() || '',
     stock: productoBase?.stock?.toString() || '0',
     descripcion: productoBase?.descripcion || '',
@@ -32,6 +33,7 @@ export default function FormularioProducto({ productoBase, onClose }: Props) {
     const payload = {
       nombre: form.nombre.trim(),
       sku: form.sku.trim() || null,
+      precio_costo: parseFloat(form.precio_costo) || 0,
       precio: parseFloat(form.precio) || 0,
       stock: parseInt(form.stock, 10) || 0,
       descripcion: form.descripcion.trim() || null,
@@ -83,14 +85,27 @@ export default function FormularioProducto({ productoBase, onClose }: Props) {
             />
           </div>
 
+          <div className="form-group">
+            <label>SKU / Código</label>
+            <input 
+              className="form-input"
+              value={form.sku}
+              onChange={e => setForm({...form, sku: e.target.value})}
+              placeholder="Ej. OP1-BLK-12"
+            />
+          </div>
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div className="form-group">
-              <label>SKU / Código</label>
+              <label>Precio de Costo ($)</label>
               <input 
+                type="number"
+                step="0.01"
+                min="0"
                 className="form-input"
-                value={form.sku}
-                onChange={e => setForm({...form, sku: e.target.value})}
-                placeholder="OP1-BLK-12"
+                value={form.precio_costo}
+                onChange={e => setForm({...form, precio_costo: e.target.value})}
+                placeholder="0.00"
               />
             </div>
             

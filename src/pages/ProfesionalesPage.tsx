@@ -1,19 +1,31 @@
 import React, { useState } from 'react'
-import { Plus, Trash2, Check, X } from 'lucide-react'
+import { Plus, Trash2, Check, X, Calendar, CircleDollarSign, Coffee } from 'lucide-react'
 import { useTodasEmpleadas } from '../hooks/useEmpleadas'
 import { supabase } from '../lib/supabase'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Empleada } from '../types/database'
 
 
-interface EmpleadaForm { id?: string; nombre: string }
+interface EmpleadaForm { 
+  id?: string; 
+  nombre: string;
+  fecha_contratacion: string;
+  sueldo_diario: string; // Changed to string for UI flexibility
+  dias_descanso: string[];
+}
 
+const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
 
 export default function ProfesionalesPage() {
   const qc = useQueryClient()
   const { data: empleadas = [], isLoading } = useTodasEmpleadas()
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState<EmpleadaForm>({ nombre: '' })
+  const [form, setForm] = useState<EmpleadaForm>({ 
+    nombre: '',
+    fecha_contratacion: new Date().toISOString().split('T')[0],
+    sueldo_diario: '',
+    dias_descanso: []
+  })
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -23,42 +35,68 @@ export default function ProfesionalesPage() {
     if (!form.nombre.trim()) return
     setSaving(true)
 
+    const payload = {
+      nombre: form.nombre.trim(),
+      fecha_contratacion: form.fecha_contratacion,
+      sueldo_diario: parseFloat(form.sueldo_diario) || 0,
+      dias_descanso: form.dias_descanso
+    }
+
     if (editingId) {
       await supabase
         .from('perfiles_empleadas')
-        .update({
-          nombre: form.nombre.trim(),
-        })
+        .update(payload)
         .eq('id', editingId)
     } else {
       await supabase.from('perfiles_empleadas').insert({
-        nombre: form.nombre.trim(),
+        ...payload,
         activo: true,
       })
     }
 
-
     qc.invalidateQueries({ queryKey: ['empleadas'] })
-    setForm({ nombre: '' })
-
+    resetForm()
     setShowForm(false)
-    setEditingId(null)
     setSaving(false)
   }
 
   const startEdit = (emp: Empleada) => {
-    setForm({ id: emp.id, nombre: emp.nombre })
+    setForm({ 
+      id: emp.id, 
+      nombre: emp.nombre,
+      fecha_contratacion: emp.fecha_contratacion || new Date().toISOString().split('T')[0],
+      sueldo_diario: emp.sueldo_diario ? emp.sueldo_diario.toString() : '',
+      dias_descanso: emp.dias_descanso || []
+    })
     setEditingId(emp.id)
     setShowForm(true)
   }
 
+  const resetForm = () => {
+    setForm({ 
+      nombre: '',
+      fecha_contratacion: new Date().toISOString().split('T')[0],
+      sueldo_diario: '',
+      dias_descanso: []
+    })
+    setEditingId(null)
+  }
 
   const cancelForm = () => {
     setShowForm(false)
-    setEditingId(null)
-    setForm({ nombre: '' })
+    resetForm()
   }
 
+  const toggleDay = (day: string) => {
+    setForm(prev => {
+      const current = prev.dias_descanso
+      if (current.includes(day)) {
+        return { ...prev, dias_descanso: current.filter(d => d !== day) }
+      } else {
+        return { ...prev, dias_descanso: [...current, day] }
+      }
+    })
+  }
 
   const toggleActivo = async (emp: Empleada) => {
     await supabase
@@ -89,16 +127,16 @@ export default function ProfesionalesPage() {
         </div>
       </div>
 
-      <div className="page-content">
+      <div className="page-content" style={{ paddingBottom: 60 }}>
         {/* New empleada form */}
         {showForm && (
-          <div className="card" style={{ marginBottom: 20 }}>
+          <div className="card" style={{ marginBottom: 24, border: '1px solid var(--accent-light)' }}>
             <div className="card-header">
               <span className="card-title">{editingId ? 'Editar profesional' : 'Agregar profesional'}</span>
               <button onClick={cancelForm} className="modal-close-btn"><X size={15} /></button>
             </div>
-            <form onSubmit={handleSubmit} style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div className="form-grid-1">
+            <form onSubmit={handleSubmit} style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div className="form-grid-3">
                 <div className="form-group">
                   <label>Nombre completo</label>
                   <input
@@ -110,13 +148,78 @@ export default function ProfesionalesPage() {
                     placeholder="Ej: Daniela Ugalde..."
                   />
                 </div>
+
+                <div className="form-group">
+                  <label>Fecha de contratación</label>
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <Calendar size={18} style={{ position: 'absolute', left: 14, color: 'var(--text-3)', pointerEvents: 'none' }} />
+                    <input
+                      type="date"
+                      required
+                      value={form.fecha_contratacion}
+                      onChange={(e) => setForm((f) => ({ ...f, fecha_contratacion: e.target.value }))}
+                      onClick={(e) => e.currentTarget.showPicker?.()}
+                      className="form-input"
+                      style={{ paddingLeft: '42px', width: '100%', cursor: 'pointer' }}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>Sueldo diario</label>
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <span style={{ 
+                      position: 'absolute', left: 14, fontSize: '15px', 
+                      fontWeight: 600, color: 'var(--text-3)', pointerEvents: 'none'
+                    }}>$</span>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      required
+                      value={form.sueldo_diario || ''}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9.]/g, '')
+                        setForm((f) => ({ ...f, sueldo_diario: val }))
+                      }}
+                      className="form-input"
+                      placeholder="000.00"
+                      style={{ paddingLeft: '42px', width: '100%' }}
+                    />
+                  </div>
+                </div>
               </div>
 
+              <div className="form-group">
+                <label style={{ marginBottom: 8, display: 'block' }}>Días de descanso (Semanales)</label>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {DIAS.map(day => (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => toggleDay(day)}
+                      className={form.dias_descanso.includes(day) ? 'day-btn active' : 'day-btn'}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        backgroundColor: form.dias_descanso.includes(day) ? 'var(--accent)' : 'var(--surface-2)',
+                        color: form.dias_descanso.includes(day) ? 'white' : 'var(--text-3)',
+                        border: '1px solid ' + (form.dias_descanso.includes(day) ? 'var(--accent)' : 'var(--border)'),
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      {day.substring(0, 3)}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
                 <button type="button" onClick={cancelForm} className="btn-ghost">Cancelar</button>
-                <button type="submit" disabled={saving} className="btn-primary">
-                  <Check size={14} /> {saving ? 'Guardando...' : 'Guardar cambios'}
+                <button type="submit" disabled={saving} className="btn-primary" style={{ padding: '10px 24px' }}>
+                  <Check size={14} /> {saving ? 'Guardando...' : 'Guardar profesional'}
                 </button>
               </div>
             </form>
@@ -145,7 +248,27 @@ export default function ProfesionalesPage() {
               <div key={emp.id} className="empleada-row">
                 <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
                   <span className="empleada-nombre">{emp.nombre}</span>
-                  <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 600 }}>{emp.nombre.substring(0, 3).toUpperCase()}</span>
+                  <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 11, color: 'var(--text-3)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Calendar size={13} style={{ opacity: 0.7 }} /> 
+                      <span style={{ fontWeight: 500 }}>Contratación:</span> {emp.fecha_contratacion ? new Date(emp.fecha_contratacion).toLocaleDateString() : '---'}
+                    </span>
+                    
+                    <span style={{ 
+                      fontSize: 11, 
+                      color: emp.sueldo_diario ? 'var(--accent)' : 'var(--text-3)', 
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      fontWeight: emp.sueldo_diario ? 600 : 400
+                    }}>
+                      <CircleDollarSign size={13} style={{ opacity: emp.sueldo_diario ? 1 : 0.7 }} />
+                      <span style={{ fontWeight: 500 }}>Sueldo diario:</span> {emp.sueldo_diario ? `$${emp.sueldo_diario}` : '---'}
+                    </span>
+
+                    <span style={{ fontSize: 11, color: 'var(--text-3)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Coffee size={13} style={{ opacity: 0.7 }} />
+                      <span style={{ fontWeight: 500 }}>Descanso:</span> {emp.dias_descanso && emp.dias_descanso.length > 0 ? emp.dias_descanso.map(d => d.substring(0,2)).join(', ') : '---'}
+                    </span>
+                  </div>
                 </div>
 
                 <span className={emp.activo ? 'badge-activa' : 'badge-inactiva'}>
