@@ -236,21 +236,29 @@ export default function BookingPage() {
   // ─── RENDER ───────────────────────────────────────────────────
   return (
     <div style={{ minHeight: '100vh', background: '#fbfbfb', color: '#1d1d1f', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>
-      <header style={{ position: 'sticky', top: 0, background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(20px)', zIndex: 100, borderBottom: '1px solid #f2f2f2', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <header style={{ 
+        position: 'sticky', top: 0, background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(20px)', 
+        zIndex: 100, borderBottom: '1px solid #f2f2f2', padding: isMobile ? '12px 16px' : '16px 24px', 
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '60px' 
+      }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {step !== 'sucursal' && step !== 'confirmado' ? (
-            <button onClick={() => { if (step === 'servicio') setStep('sucursal'); if (step === 'fecha') setStep('servicio'); if (step === 'cliente') setStep('fecha'); }} style={{ background: 'none', border: 'none', padding: 4, cursor: 'pointer' }}><ArrowLeft size={20} /></button>
-          ) : (
-            <Link to="/" style={{ display: 'flex', alignItems: 'center' }}><img src="/logoVertical.png" style={{ height: 28 }} /></Link>
-          )}
           {step !== 'sucursal' && step !== 'confirmado' && (
-            <Link to="/" style={{ display: 'flex', alignItems: 'center' }}><img src="/logoVertical.png" style={{ height: 28 }} /></Link>
+            <button 
+              onClick={() => { if (step === 'servicio') setStep('sucursal'); if (step === 'fecha') setStep('servicio'); if (step === 'cliente') setStep('fecha'); }} 
+              style={{ background: '#f5f5f7', border: 'none', width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+            >
+              <ArrowLeft size={18} />
+            </button>
           )}
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', color: 'inherit' }}>
+            <img src="/logoVertical.png" style={{ height: 28 }} alt="Logo" />
+            {!isMobile && <span style={{ fontWeight: 700, fontSize: 16 }}>MUYMUY</span>}
+          </Link>
         </div>
         {step !== 'confirmado' && (
-          <Link to="/" style={{ fontSize: 14, fontWeight: 500, color: '#86868b', textDecoration: 'none', padding: '6px 12px', borderRadius: '12px' }} onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => e.currentTarget.style.background = '#f5f5f7'} onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => e.currentTarget.style.background = 'transparent'}>Cancelar</Link>
+          <Link to="/" style={{ fontSize: 13, fontWeight: 600, color: '#ff3b30', textDecoration: 'none', padding: '6px 14px', borderRadius: '14px', background: '#fff1f0' }}>Cancelar</Link>
         )}
-        {step === 'confirmado' && <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--primary)' }}>MUYMUY Beauty</div>}
+        {step === 'confirmado' && <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary)' }}>MUYMUY Beauty</div>}
       </header>
 
       <main style={{ maxWidth: isMobile ? 600 : 1000, margin: '0 auto', padding: isMobile ? '32px 20px 48px' : '48px 20px' }}>

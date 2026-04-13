@@ -2,7 +2,9 @@ import {
   MapPin, 
   User, 
   ShieldCheck, 
-  Heart 
+  Heart,
+  Menu,
+  X 
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
@@ -105,6 +107,7 @@ const InstagramIcon = ({ size = 24 }: { size?: number }) => (
 export default function LandingPage() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50)
@@ -143,14 +146,53 @@ export default function LandingPage() {
             <a href="#services" style={{ textDecoration: 'none', color: 'inherit' }}>Servicios</a>
             <a href="#contact" style={{ textDecoration: 'none', color: 'inherit' }}>Contacto</a>
           </div>
-          <Link to="/reservar" style={{
-            background: '#1d1d1f', color: '#fff', border: 'none',
-            padding: '8px 18px', borderRadius: '20px', fontSize: '13px', fontWeight: 600,
-            cursor: 'pointer', textDecoration: 'none'
-          }}>
-            Agendar Online
-          </Link>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
+            <Link to="/reservar" style={{
+              background: '#1d1d1f', color: '#fff', border: 'none',
+              padding: '8px 18px', borderRadius: '20px', fontSize: '13px', fontWeight: 600,
+              cursor: 'pointer', textDecoration: 'none'
+            }} className="desktop-only">
+              Agendar Online
+            </Link>
+
+            <button 
+              onClick={() => setIsMenuOpen(true)}
+              className="mobile-only"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1d1d1f', display: 'flex', alignItems: 'center' }}
+            >
+              <Menu size={24} />
+            </button>
+          </div>
         </div>
+
+        {/* ─── MOBILE MENU OVERLAY ───────────────────────── */}
+        {isMenuOpen && (
+          <div className="mobile-menu-overlay">
+            <button className="mobile-menu-close" onClick={() => setIsMenuOpen(false)}>
+              <X size={24} />
+            </button>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+              <img src="/logoVertical.png" alt="MUYMUY" style={{ height: '32px' }} />
+              <span style={{ fontWeight: 700, fontSize: '20px', letterSpacing: '-0.5px' }}>MUYMUY</span>
+            </div>
+
+            <a href="#welcome" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Estudio</a>
+            <a href="#services" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Servicios</a>
+            <a href="#contact" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Contacto</a>
+            
+            <div style={{ marginTop: 'auto' }}>
+              <Link to="/reservar" onClick={() => setIsMenuOpen(false)} style={{
+                background: '#1d1d1f', color: '#fff', border: 'none',
+                padding: '16px', borderRadius: '16px', fontSize: '16px', fontWeight: 600,
+                cursor: 'pointer', textDecoration: 'none', display: 'block', textAlign: 'center'
+              }}>
+                Agendar cita ahora
+              </Link>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* ─── HERO SECTION SPLIT ─────────────────────────────────── */}
