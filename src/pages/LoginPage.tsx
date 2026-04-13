@@ -14,9 +14,9 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     setError(null)
-    
+
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    
+
     if (error) {
       setError('Credenciales inválidas o error de conexión.')
       setLoading(false)
@@ -47,13 +47,16 @@ export default function LoginPage() {
       <div className="auth-blob auth-blob-2"></div>
 
       <div className="auth-card">
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
+          <img src="/logoVertical.png" alt="Logo" style={{ maxWidth: '180px', height: 'auto' }} />
+        </div>
         <div className="auth-header">
           <h1 className="auth-title">
             {view === 'login' ? 'Bienvenido de nuevo' : 'Recuperar acceso'}
           </h1>
           <p className="auth-subtitle">
-            {view === 'login' 
-              ? 'Ingresa tus credenciales para administrar el sistema.' 
+            {view === 'login'
+              ? 'Ingresa tus credenciales para administrar el sistema.'
               : 'Te enviaremos un enlace para restablecer tu contraseña.'}
           </p>
         </div>
@@ -88,9 +91,9 @@ export default function LoginPage() {
               <label>Correo electrónico</label>
               <div className="auth-input-wrapper">
                 <Mail size={16} />
-                <input 
-                  type="email" 
-                  className="auth-input" 
+                <input
+                  type="email"
+                  className="auth-input"
                   placeholder="admin@ejemplo.com"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
@@ -108,9 +111,9 @@ export default function LoginPage() {
               </div>
               <div className="auth-input-wrapper">
                 <Lock size={16} />
-                <input 
-                  type="password" 
-                  className="auth-input" 
+                <input
+                  type="password"
+                  className="auth-input"
                   placeholder="••••••••"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
@@ -129,9 +132,9 @@ export default function LoginPage() {
               <label>Correo electrónico</label>
               <div className="auth-input-wrapper">
                 <Mail size={16} />
-                <input 
-                  type="email" 
-                  className="auth-input" 
+                <input
+                  type="email"
+                  className="auth-input"
                   placeholder="admin@ejemplo.com"
                   value={email}
                   onChange={e => setEmail(e.target.value)}

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { FileDown, Calendar } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Sucursal } from '../types/database'
-import { downloadComisionesCSV, downloadResumenVentasCSV, downloadLiquidacionComisionesCSV } from '../lib/exportReports'
+import { downloadResumenVentasCSV, downloadLiquidacionComisionesCSV } from '../lib/exportReports'
 import { useToast } from '../components/Common/Toast'
 
 export default function ReportesPage() {
@@ -29,8 +29,6 @@ export default function ReportesPage() {
     try {
       if (reportType === 'liquidacion') {
         await downloadLiquidacionComisionesCSV(fechaInicio, fechaFin)
-      } else if (reportType === 'comisiones') {
-        await downloadComisionesCSV(fechaInicio, fechaFin, sucursalId)
       } else if (reportType === 'ventas') {
         await downloadResumenVentasCSV(fechaInicio, fechaFin, sucursalId === 'all' ? sucursales.map(s => s.id) : [sucursalId])
       }
@@ -71,20 +69,6 @@ export default function ReportesPage() {
                 </div>
               </label>
 
-              <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, cursor: 'pointer' }}>
-                <input 
-                  type="radio" 
-                  name="reportType" 
-                  value="comisiones" 
-                  checked={reportType === 'comisiones'} 
-                  onChange={e => setReportType(e.target.value)} 
-                />
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>Matriz de Comisiones (Unidades)</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-3)' }}>Desglose de tratamientos realizados cruzado por profesional.</div>
-                </div>
-              </label>
-
               <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
                 <input 
                   type="radio" 
@@ -108,14 +92,22 @@ export default function ReportesPage() {
                 <div className="filter-field">
                   <label>Fecha inicial</label>
                   <div className="input-with-icon">
-                    <input type="date" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} />
+                    <input 
+                      type="date" 
+                      value={fechaInicio} 
+                      onChange={e => setFechaInicio(e.target.value)} 
+                    />
                     <Calendar size={16} />
                   </div>
                 </div>
                 <div className="filter-field">
                   <label>Fecha final</label>
                   <div className="input-with-icon">
-                    <input type="date" value={fechaFin} onChange={e => setFechaFin(e.target.value)} />
+                    <input 
+                      type="date" 
+                      value={fechaFin} 
+                      onChange={e => setFechaFin(e.target.value)} 
+                    />
                     <Calendar size={16} />
                   </div>
                 </div>

@@ -213,14 +213,22 @@ export default function EstadisticasPage() {
                 <div className="filter-field">
                   <label>Fecha inicial</label>
                   <div className="input-with-icon">
-                    <input type="date" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} />
+                    <input 
+                      type="date" 
+                      value={fechaInicio} 
+                      onChange={e => setFechaInicio(e.target.value)} 
+                    />
                     <Calendar size={16} />
                   </div>
                 </div>
                 <div className="filter-field">
                   <label>F. final</label>
                   <div className="input-with-icon">
-                    <input type="date" value={fechaFin} onChange={e => setFechaFin(e.target.value)} />
+                    <input 
+                      type="date" 
+                      value={fechaFin} 
+                      onChange={e => setFechaFin(e.target.value)} 
+                    />
                     <Calendar size={16} />
                   </div>
                 </div>

@@ -16,7 +16,7 @@ const ToastContext = createContext<ToastFn | null>(null)
 const CONFIG: Record<ToastType, { icon: typeof CheckCircle; bg: string; border: string; iconColor: string }> = {
   success: { icon: CheckCircle,    bg: 'var(--surface)',   border: 'var(--success)',  iconColor: 'var(--success)' },
   error:   { icon: XCircle,        bg: 'var(--surface)',   border: 'var(--danger)',   iconColor: 'var(--danger)'  },
-  warning: { icon: AlertTriangle,  bg: 'var(--surface)',   border: '#f59e0b',         iconColor: '#f59e0b'        },
+  warning: { icon: AlertTriangle,  bg: 'var(--surface)',   border: '#cda434',         iconColor: '#cda434'        },
   info:    { icon: Info,           bg: 'var(--surface)',   border: 'var(--accent)',   iconColor: 'var(--accent)'  },
 }
 

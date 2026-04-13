@@ -10,8 +10,9 @@ interface ChartProps {
 }
 
 // SaaS Palette: Amber/Yellow shades + expanded palette
-const DEFAULT_COLORS = ['#f59e0b', '#fbbf24', '#d97706', '#fcd34d', '#78350f']
-const MULTI_COLORS = ['#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ef4444', '#06b6d4', '#f97316']
+// Forest & Leaf Green Palette
+const DEFAULT_COLORS = ['#2D5A27', '#88B04B', '#1a3617', '#c8d59a', '#4d552b']
+const MULTI_COLORS = ['#2D5A27', '#88B04B', '#10b981', '#3b82f6', '#8b5cf6', '#ef4444', '#06b6d4']
 
 const truncate = (str: string, max = 15) => 
   (str && str.length > max) ? str.substring(0, max) + '...' : (str || '')
@@ -175,7 +176,7 @@ export const DashboardLineChart = ({ data, height = 300, colors = DEFAULT_COLORS
 // ─── Heatmap (hora × día) ──────────────────────────────────────
 
 const DAYS_ORDER = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
-const HEAT_COLORS = ['#f8fafc', '#fef3c7', '#fde68a', '#fbbf24', '#f59e0b', '#d97706', '#92400e']
+const HEAT_COLORS = ['#f8fafc', '#eef2e0', '#dce5c1', '#88B04B', '#2D5A27', '#1a3617', '#0d1b0b']
 
 function heatColor(value: number, maxVal: number): string {
   if (!value || maxVal === 0) return HEAT_COLORS[0]
@@ -234,7 +235,7 @@ export const DashboardHeatmap = ({ data, height = 280 }: HeatmapProps) => {
                       textAlign: 'center', 
                       fontSize: 10, 
                       fontWeight: val > 0 ? 700 : 400,
-                      color: val > maxVal * 0.5 ? '#78350f' : 'var(--text-3)',
+                      color: val > maxVal * 0.5 ? '#fff' : 'var(--text-3)',
                       cursor: 'default',
                       transition: 'transform 0.15s',
                     }}
@@ -267,7 +268,7 @@ interface SemaforoProps {
 
 const SEMAFORO_CONFIG = [
   { label: 'Crítico', color: '#ef4444', bg: '#fef2f2', border: '#fca5a5' },
-  { label: 'Bajo', color: '#f59e0b', bg: '#fffbeb', border: '#fcd34d' },
+  { label: 'Bajo', color: '#a2b55c', bg: '#f7f9ed', border: '#dce5c1' },
   { label: 'OK', color: '#10b981', bg: '#f0fdf4', border: '#6ee7b7' },
 ]
 

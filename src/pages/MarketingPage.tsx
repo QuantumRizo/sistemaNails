@@ -31,7 +31,7 @@ const PLATFORM_COLORS: Record<string, { bg: string; color: string; label: string
 
 const ESTADO_STYLES: Record<string, { bg: string; color: string }> = {
   activa:     { bg: 'rgba(22,163,74,0.1)',  color: '#16a34a' },
-  pausada:    { bg: 'rgba(245,158,11,0.1)', color: '#d97706' },
+  pausada:    { bg: 'var(--accent-light)', color: 'var(--accent)' },
   finalizada: { bg: 'rgba(107,114,128,0.1)', color: '#6b7280' },
 }
 
@@ -61,8 +61,8 @@ function KpiCard({ icon, label, value, sub, gradient, positive, loading }: KpiCa
       overflow: 'hidden',
       transition: 'transform 0.2s, box-shadow 0.2s',
     }}
-    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLElement).style.boxShadow = gradient ? '0 8px 28px rgba(0,0,0,0.15)' : 'var(--shadow-md)' }}
-    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; (e.currentTarget as HTMLElement).style.boxShadow = gradient ? '0 4px 20px rgba(0,0,0,0.1)' : 'var(--shadow-sm)' }}
+    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLElement).style.boxShadow = gradient ? '0 8px 28px rgba(162, 181, 92, 0.25)' : 'var(--shadow-md)' }}
+    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; (e.currentTarget as HTMLElement).style.boxShadow = gradient ? '0 4px 20px rgba(162, 181, 92, 0.2)' : 'var(--shadow-sm)' }}
     >
       {/* Decorative circle */}
       {gradient && (
@@ -578,7 +578,7 @@ export default function MarketingPage() {
             {/* Connection banner if not connected */}
             {!isConnected && (
               <div style={{
-                background: 'linear-gradient(135deg, var(--accent) 0%, #d97706 100%)',
+                background: 'linear-gradient(135deg, var(--accent) 0%, #7a8a43 100%)',
                 borderRadius: 'var(--radius-lg)',
                 padding: '20px 24px',
                 display: 'flex',
@@ -623,7 +623,7 @@ export default function MarketingPage() {
                 icon={<DollarSign size={16} />}
                 label="Inversión Total"
                 value={fmtMoney(displayInsights.spend)}
-                gradient="linear-gradient(135deg, var(--accent) 0%, #d97706 100%)"
+                gradient="linear-gradient(135deg, var(--accent) 0%, #7a8a43 100%)"
                 loading={loadingInsights}
               />
               <KpiCard

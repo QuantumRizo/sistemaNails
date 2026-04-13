@@ -43,7 +43,19 @@ export default function Sidebar({ current, onChange }: Props) {
 
   return (
     <nav className="sidebar">
-      <div style={{ padding: '20px 16px 8px' }}>
+      <div style={{ padding: '24px 20px 10px', textAlign: 'center' }}>
+        <img 
+          src="/logo.jpeg" 
+          alt="MUYMUY Beauty Studio" 
+          style={{ 
+            maxWidth: '100%', 
+            height: 'auto', 
+            borderRadius: '12px',
+            marginBottom: '10px'
+          }} 
+        />
+      </div>
+      <div style={{ padding: '10px 16px 8px' }}>
         <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: '0.05em', marginBottom: 8 }}>SUCURSAL ACTIVA</div>
         <select 
           value={selectedSucursalId}

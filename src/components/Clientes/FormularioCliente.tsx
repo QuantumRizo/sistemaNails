@@ -3,6 +3,7 @@ import { X, Save } from 'lucide-react'
 import { useCrearCliente } from '../../hooks/useClientes'
 import { useSucursales } from '../../hooks/useSucursales'
 import type { Cliente, SexoType } from '../../types/database'
+import { useToast } from '../Common/Toast'
 
 const PROCEDENCIAS = [
   'Banamex', 'Facebook', 'Instagram', 'Lufthansa', 'Recomendación',
@@ -16,6 +17,7 @@ interface Props {
 
 export default function FormularioCliente({ onCreated, onClose }: Props) {
   const crearCliente = useCrearCliente()
+  const toast = useToast()
   const { data: sucursales = [] } = useSucursales()
   const [form, setForm] = useState({
     nombre_completo: '',
@@ -32,9 +34,17 @@ export default function FormularioCliente({ onCreated, onClose }: Props) {
 
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }))
 
+  const sanitizePhone = (val: string) => val.replace(/\D/g, '').slice(0, 10)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const { nombre_completo, telefono_cel, email, ...extra } = form
+    
+    if (telefono_cel && telefono_cel.length !== 10) {
+      toast('El teléfono debe tener exactamente 10 dígitos (Ej: 5512345678)', 'error')
+      return
+    }
+
     const payload = {
       nombre_completo,
       telefono_cel: telefono_cel || null,
@@ -71,7 +81,7 @@ export default function FormularioCliente({ onCreated, onClose }: Props) {
             </div>
             <div className="form-group">
               <label>Teléfono celular</label>
-              <input value={form.telefono_cel} onChange={(e) => set('telefono_cel', e.target.value)} className="form-input" placeholder="55 1234 5678" />
+              <input value={form.telefono_cel} onChange={(e) => set('telefono_cel', sanitizePhone(e.target.value))} className="form-input" placeholder="5512345678" />
             </div>
             <div className="form-group">
               <label>Email</label>

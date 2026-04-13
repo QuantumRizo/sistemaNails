@@ -15,12 +15,12 @@ export default function KPICard({ title, value, subtitle, Icon, variant = 'white
   // Style configurations
   const config = {
     accent: {
-      bg: 'linear-gradient(135deg, var(--accent) 0%, #d97706 100%)',
+      bg: 'var(--kpi-gradient)',
       text: '#fff',
       subText: 'rgba(255, 255, 255, 0.75)',
       iconBg: 'rgba(255, 255, 255, 0.2)',
       iconColor: '#fff',
-      shadow: '0 4px 20px rgba(245, 158, 11, 0.3)',
+      shadow: '0 4px 20px rgba(45, 90, 39, 0.3)',
       decor: 'rgba(255, 255, 255, 0.08)'
     },
     success: {
