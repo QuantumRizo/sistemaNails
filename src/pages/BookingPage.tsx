@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Clock, MapPin, ChevronRight, ChevronLeft, CheckCircle, ArrowLeft, RefreshCw, User, Sparkles } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { 
-  format, isSameDay, isToday, isBefore, 
-  startOfMonth, endOfMonth, startOfWeek, endOfWeek, 
+import {
+  format, isSameDay, isToday, isBefore,
+  startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   eachDayOfInterval, addMonths, subMonths, startOfDay
 } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -24,21 +24,21 @@ export default function BookingPage() {
   const [sucursales, setSucursales] = useState<Sucursal[]>([])
   const [servicios, setServicios] = useState<Servicio[]>([])
   const [perfiles, setPerfiles] = useState<Empleada[]>([])
-  
+
   const [selectedSucursal, setSelectedSucursal] = useState<Sucursal | null>(null)
   const [selectedServicios, setSelectedServicios] = useState<Servicio[]>([])
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
-  
+
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [clientInfo, setClientInfo] = useState({ nombre: '', telefono: '', email: '' })
-  
+
   // Real availability state
   const [availableSlots, setAvailableSlots] = useState<string[]>([])
   const [fetchingSlots, setFetchingSlots] = useState(false)
-  
+
   // Responsive state
   const [isMobile, setIsMobile] = useState(window.innerWidth < 850)
 
@@ -84,7 +84,7 @@ export default function BookingPage() {
         setFetchingSlots(true)
         const dateStr = format(selectedDate!, 'yyyy-MM-dd')
         const totalDuration = selectedServicios.reduce((acc, s) => acc + s.duracion_slots, 0)
-        
+
         try {
           // We query all appointments for that day regardless of branch to check true availability of the pro
           const [resCitas, resBloqueos] = await Promise.all([
@@ -99,7 +99,7 @@ export default function BookingPage() {
 
           const citas = resCitas.data || []
           const bloqueos = resBloqueos.data || []
-          
+
           const slotsFound = new Set<string>()
 
           perfiles.forEach(emp => {
@@ -107,12 +107,12 @@ export default function BookingPage() {
             citas.filter(c => c.empleada_id === emp.id).forEach(c => {
               const start = Math.floor(parseInt(c.bloque_inicio.split(':')[0]) * 4 + parseInt(c.bloque_inicio.split(':')[1]) / 15)
               const duration = c.duracion_manual_slots || 4 // Fallback 1 hour if metadata missing
-              for(let i=0; i<duration; i++) if(start+i < 96) occupied[start+i] = true
+              for (let i = 0; i < duration; i++) if (start + i < 96) occupied[start + i] = true
             })
             bloqueos.filter(b => b.empleada_id === emp.id).forEach(b => {
               const start = Math.floor(parseInt(b.hora_inicio.split(':')[0]) * 4 + parseInt(b.hora_inicio.split(':')[1]) / 15)
               const end = Math.floor(parseInt(b.hora_fin.split(':')[0]) * 4 + parseInt(b.hora_fin.split(':')[1]) / 15)
-              for(let i=start; i<end; i++) if(i < 96) occupied[i] = true
+              for (let i = start; i < end; i++) if (i < 96) occupied[i] = true
             })
             for (let h = START_HOUR; h < END_HOUR; h++) {
               for (let m = 0; m < 60; m += 15) {
@@ -156,7 +156,7 @@ export default function BookingPage() {
       toast('Por favor completa tu nombre y un teléfono válido (10 dígitos)', 'error')
       return
     }
-    
+
     setSubmitting(true)
     try {
       let clientId = ''
@@ -181,25 +181,25 @@ export default function BookingPage() {
       const startTime = selectedTime
       const startIdx = parseInt(startTime.split(':')[0]) * 4 + parseInt(startTime.split(':')[1]) / 15
       let targetEmpleadaId = ''
-      
+
       const { data: citas } = await supabase.from('citas').select('*').eq('fecha', dateStr).neq('estado', 'Cancelada')
       const { data: bloqueos } = await supabase.from('bloqueos_agenda').select('*').eq('fecha', dateStr)
-      
+
       for (const emp of perfiles) {
         const occupied = new Array(96).fill(false)
         citas?.filter(c => c.empleada_id === emp.id).forEach(c => {
           const s = Math.floor(parseInt(c.bloque_inicio.split(':')[0]) * 4 + parseInt(c.bloque_inicio.split(':')[1]) / 15)
           const d = c.duracion_manual_slots || 4
-          for(let i=0; i<d; i++) if(s+i < 96) occupied[s+i] = true
+          for (let i = 0; i < d; i++) if (s + i < 96) occupied[s + i] = true
         })
         bloqueos?.filter(b => b.empleada_id === emp.id).forEach(b => {
           const s = Math.floor(parseInt(b.hora_inicio.split(':')[0]) * 4 + parseInt(b.hora_inicio.split(':')[1]) / 15)
           const e = Math.floor(parseInt(b.hora_fin.split(':')[0]) * 4 + parseInt(b.hora_fin.split(':')[1]) / 15)
-          for(let i=s; i<e; i++) if(i < 96) occupied[i] = true
+          for (let i = s; i < e; i++) if (i < 96) occupied[i] = true
         })
         let fits = true
-        for(let i=0; i<totalDuration; i++) {
-          if(startIdx + i >= 96 || occupied[startIdx + i]) { fits = false; break; }
+        for (let i = 0; i < totalDuration; i++) {
+          if (startIdx + i >= 96 || occupied[startIdx + i]) { fits = false; break; }
         }
         if (fits) { targetEmpleadaId = emp.id; break; }
       }
@@ -214,7 +214,7 @@ export default function BookingPage() {
         estado: 'Programada', // Changed from Pendiente to Programada
         duracion_manual_slots: totalDuration
       }).select().single()
-      
+
       if (e2) throw e2
       if (cita) {
         await supabase.from('cita_servicios').insert(selectedServicios.map(s => ({ cita_id: cita.id, servicio_id: s.id })))
@@ -240,15 +240,15 @@ export default function BookingPage() {
   // ─── RENDER ───────────────────────────────────────────────────
   return (
     <div style={{ minHeight: '100vh', background: '#fbfbfb', color: '#1d1d1f', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>
-      <header style={{ 
-        position: 'sticky', top: 0, background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(20px)', 
-        zIndex: 100, borderBottom: '1px solid #f2f2f2', padding: isMobile ? '12px 16px' : '16px 24px', 
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '60px' 
+      <header style={{
+        position: 'sticky', top: 0, background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(20px)',
+        zIndex: 100, borderBottom: '1px solid #f2f2f2', padding: isMobile ? '12px 16px' : '16px 24px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '60px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {step !== 'sucursal' && step !== 'confirmado' && (
-            <button 
-              onClick={() => { if (step === 'servicio') setStep('sucursal'); if (step === 'fecha') setStep('servicio'); if (step === 'cliente') setStep('fecha'); }} 
+            <button
+              onClick={() => { if (step === 'servicio') setStep('sucursal'); if (step === 'fecha') setStep('servicio'); if (step === 'cliente') setStep('fecha'); }}
               style={{ background: '#f5f5f7', border: 'none', width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
             >
               <ArrowLeft size={18} />
@@ -295,13 +295,13 @@ export default function BookingPage() {
           <div className="animate-in" style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 40, alignItems: 'flex-start' }}>
             <div style={{ flex: 1, width: '100%' }}>
               {isMobile && selectedServicios.length > 0 && (
-                <div style={{ 
-                  position: 'sticky', top: 60, zIndex: 50, background: 'rgba(255,255,255,0.95)', 
+                <div style={{
+                  position: 'sticky', top: 60, zIndex: 50, background: 'rgba(255,255,255,0.95)',
                   backdropFilter: 'blur(12px)', padding: '12px 0', borderBottom: '1px solid #f2f2f2',
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20
                 }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary)' }}>
-                    {selectedServicios.length} servicios 
+                    {selectedServicios.length} servicios
                     <span style={{ fontSize: 11, color: '#86868b', fontWeight: 500, marginLeft: 8 }}>{totalTime} min</span>
                   </div>
                   <button onClick={() => setStep('fecha')} style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '10px 24px', borderRadius: '14px', fontSize: 15, fontWeight: 700, boxShadow: '0 4px 12px rgba(22, 163, 74, 0.2)' }}>Siguiente</button>
@@ -372,12 +372,12 @@ export default function BookingPage() {
                   const sDate = startOfWeek(mStart)
                   const eDate = endOfWeek(mEnd)
                   const days = eachDayOfInterval({ start: sDate, end: eDate })
-                  
+
                   return days.map((day, i) => {
                     const isSelected = selectedDate && isSameDay(day, selectedDate)
                     const isOutside = !isSameDay(startOfMonth(day), mStart)
                     const isPast = isBefore(startOfDay(day), startOfDay(new Date()))
-                    
+
                     return (
                       <button
                         key={i}
@@ -430,15 +430,15 @@ export default function BookingPage() {
             <div style={{ background: '#fff', borderRadius: 20, padding: 24, border: '1px solid #efefef', marginBottom: 32 }}>
               <div style={{ marginBottom: 20 }}>
                 <label style={{ fontSize: 13, fontWeight: 700, color: '#86868b', textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Nombre completo</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, borderBottom: '1px solid #efefef', paddingBottom: 12 }}><User size={18} color="#c7c7cc" /><input type="text" placeholder="Escribe tu nombre" value={clientInfo.nombre} onChange={e => setClientInfo(prev => ({ ...prev, nombre: e.target.value }))} style={{ border: 'none', width: '100%', fontSize: 16, outline: 'none' }}/></div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, borderBottom: '1px solid #efefef', paddingBottom: 12 }}><User size={18} color="#c7c7cc" /><input type="text" placeholder="Escribe tu nombre" value={clientInfo.nombre} onChange={e => setClientInfo(prev => ({ ...prev, nombre: e.target.value }))} style={{ border: 'none', width: '100%', fontSize: 16, outline: 'none' }} /></div>
               </div>
               <div style={{ marginBottom: 20 }}>
                 <label style={{ fontSize: 13, fontWeight: 700, color: '#86868b', textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>WhatsApp / Teléfono</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, borderBottom: '1px solid #efefef', paddingBottom: 12 }}><Clock size={18} color="#c7c7cc" /><input type="tel" placeholder="Ej: 5512345678" value={clientInfo.telefono} onChange={e => setClientInfo(prev => ({ ...prev, telefono: sanitizePhone(e.target.value) }))} style={{ border: 'none', width: '100%', fontSize: 16, outline: 'none' }}/></div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, borderBottom: '1px solid #efefef', paddingBottom: 12 }}><Clock size={18} color="#c7c7cc" /><input type="tel" placeholder="Ej: 5512345678" value={clientInfo.telefono} onChange={e => setClientInfo(prev => ({ ...prev, telefono: sanitizePhone(e.target.value) }))} style={{ border: 'none', width: '100%', fontSize: 16, outline: 'none' }} /></div>
               </div>
               <div>
                 <label style={{ fontSize: 13, fontWeight: 700, color: '#86868b', textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Correo electrónico (Opcional)</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, borderBottom: '1px solid #efefef', paddingBottom: 12 }}><User size={18} color="#c7c7cc" /><input type="email" placeholder="Tu email" value={clientInfo.email} onChange={e => setClientInfo(prev => ({ ...prev, email: e.target.value }))} style={{ border: 'none', width: '100%', fontSize: 16, outline: 'none' }}/></div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, borderBottom: '1px solid #efefef', paddingBottom: 12 }}><User size={18} color="#c7c7cc" /><input type="email" placeholder="Tu email" value={clientInfo.email} onChange={e => setClientInfo(prev => ({ ...prev, email: e.target.value }))} style={{ border: 'none', width: '100%', fontSize: 16, outline: 'none' }} /></div>
               </div>
             </div>
             <div style={{ background: 'var(--primary-light)', borderRadius: 20, padding: 24, marginBottom: 32 }}>
