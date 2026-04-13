@@ -35,55 +35,55 @@ const BRANCHES = [
 const CATEGORIES = [
   {
     title: "Esmaltado Permanente",
-    image: "/category_manicura_luxury_1776098533636.png",
+    image: "/esmaltado permanente_compressed.webp",
     description: "La novedosa técnica que ha revolucionado el mundo de las uñas: el único esmaltado permanente de larga duración y 20Free.",
     linkText: "Descubre más"
   },
   {
     title: "Uñas Esculpidas",
-    image: "/category_esculpidas_luxury_1776098550318.png",
+    image: "/unas esculpidas_compressed.webp",
     description: "Uñas esculpidas con las mejores técnicas del mercado: uñas de gel, uñas en acrílico... ¡Ponte en buenas manos! ¡No esperes más!",
     linkText: "Descubre más"
   },
   {
     title: "Manicura & Spa",
-    image: "/muymuy_hero_beauty_1776097840515.png",
+    image: "/manicura_compressed.webp",
     description: "¡Tus manos hablan de ti! Cuídalas con nuestros servicios de manicura: limar y esmaltar, manicura básica, spa, etc.",
     linkText: "Descubre más"
   },
   {
     title: "Cuidado Facial",
-    image: "/category_facial_luxury_1776098568008.png",
+    image: "/facial_compressed.webp",
     description: "Protocolos de higiene profunda y tratamientos personalizados para una piel luminosa, sana y revitalizada.",
     linkText: "Descubre más"
   },
   {
     title: "Masajes Terapéuticos",
-    image: "/category_massage_luxury_2_1776098590661.png",
+    image: "/Masaje_compressed.webp",
     description: "Un refugio para el estrés. Sesiones de relajación profunda y reflexología para restaurar tu equilibrio corporal y mental.",
     linkText: "Descubre más"
   },
   {
     title: "Pedicura Avanzada",
-    image: "/category_pedicura_luxury_2_1776098606871.png",
+    image: "/Pedicura_compressed.webp",
     description: "Salud y estética integral para tus pies. Desde relajantes sesiones spa hasta pedicuras técnicas especializadas.",
     linkText: "Descubre más"
   },
   {
     title: "Eyes & Brows",
-    image: "/category_eyes_luxury_2_1776098621485.png",
+    image: "/Eyes Beauty_compressed.webp",
     description: "Realzamos tu mirada. Diseños de cejas y elevación de pestañas que enmarcan tu rostro con elegancia y naturalidad.",
     linkText: "Descubre más"
   },
   {
     title: "Depilación Premium",
-    image: "/category_depilacion_luxury_3_1776098651269.png",
+    image: "/depilacion_compressed.webp",
     description: "Suavidad duradera con técnicas delicadas y efectivas. Una experiencia de depilación profesional en un ambiente de confort.",
     linkText: "Descubre más"
   },
   {
     title: "Nail Art & Diseño",
-    image: "/category_art_nails_luxury_3_1776098666778.png",
+    image: "/Nail art_compressed.webp",
     description: "El toque artístico final. Decoraciones exclusivas y diseños personalizados para que tus uñas sean una obra de arte.",
     linkText: "Descubre más"
   }

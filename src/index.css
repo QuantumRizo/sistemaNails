@@ -19,7 +19,7 @@
   --kpi-gradient: linear-gradient(135deg, #16a34a 0%, #0f7a35 100%);
 
   /* Imagen de Fondo Landing (debe estar en la carpeta public) */
-  --hero-image: url('/hero.jpg');
+  --hero-image: url('/esmaltado permanente_compressed.webp');
   --text-1: #111827;
   --text-2: #6b7280;
   --text-3: #9ca3af;
@@ -3663,11 +3663,15 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 /* ─── Responsive Utilities ────────────────────────────────── */
 @media (max-width: 900px) {
-  .desktop-only { display: none !important; }
+  .desktop-only {
+    display: none !important;
+  }
 }
 
 @media (min-width: 901px) {
-  .mobile-only { display: none !important; }
+  .mobile-only {
+    display: none !important;
+  }
 }
 
 /* ─── Mobile Menu Overlay ─────────────────────────────────── */
@@ -3685,8 +3689,15 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 @keyframes fadeInDown {
-  from { opacity: 0; transform: translateY(-20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .mobile-nav-link {
@@ -3717,4 +3728,4 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   justify-content: center;
   cursor: pointer;
   color: #1d1d1f;
-}
+}
