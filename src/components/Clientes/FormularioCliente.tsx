@@ -51,7 +51,7 @@ export default function FormularioCliente({ onCreated, onClose }: Props) {
     if (form.telefono_cel.length === 10) {
       const checkPhone = async () => {
         setChecking(prev => ({ ...prev, phone: true }))
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('clientes')
           .select('id, nombre_completo')
           .eq('telefono_cel', form.telefono_cel)
