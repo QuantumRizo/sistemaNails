@@ -30,7 +30,7 @@ const PLATFORM_COLORS: Record<string, { bg: string; color: string; label: string
 }
 
 const ESTADO_STYLES: Record<string, { bg: string; color: string }> = {
-  activa:     { bg: 'rgba(22,163,74,0.1)',  color: '#16a34a' },
+  activa:     { bg: 'rgba(22,163,74,0.1)',  color: 'var(--kpi)' },
   pausada:    { bg: 'var(--accent-light)', color: 'var(--accent)' },
   finalizada: { bg: 'rgba(107,114,128,0.1)', color: '#6b7280' },
 }
@@ -84,7 +84,7 @@ function KpiCard({ icon, label, value, sub, gradient, positive, loading }: KpiCa
         {sub && positive !== undefined && (
           <div style={{
             display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, fontWeight: 600,
-            color: positive ? '#16a34a' : '#dc2626'
+            color: positive ? 'var(--kpi)' : '#dc2626'
           }}>
             {positive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
             {sub}
@@ -630,7 +630,7 @@ export default function MarketingPage() {
                 icon={<Users size={16} />}
                 label="Leads Generados"
                 value={fmtBig(displayInsights.leads)}
-                gradient="linear-gradient(135deg, #16a34a 0%, #0f7a35 100%)"
+                gradient="linear-gradient(135deg, var(--kpi) 0%, #0f7a35 100%)"
                 loading={loadingInsights}
               />
               <KpiCard

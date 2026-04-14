@@ -24,7 +24,7 @@ export default function KPICard({ title, value, subtitle, Icon, variant = 'white
       decor: 'rgba(255, 255, 255, 0.08)'
     },
     success: {
-      bg: 'linear-gradient(135deg, #16a34a 0%, #0f7a35 100%)',
+      bg: 'linear-gradient(135deg, var(--kpi) 0%, #0f7a35 100%)',
       text: '#fff',
       subText: 'rgba(255, 255, 255, 0.75)',
       iconBg: 'rgba(255, 255, 255, 0.2)',

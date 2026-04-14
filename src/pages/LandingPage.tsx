@@ -277,42 +277,42 @@ export default function LandingPage() {
         }} />
       </section>
 
-      {/* ─── PHILOSOPHY ────────────────────────────────────────── */}
-      <section style={{ padding: '120px 24px', textAlign: 'center', background: '#fff' }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-          <h2 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: 24 }}>
-            MUYMUY Experience
+      {/* ─── QUIENES SOMOS ────────────────────────────────────────── */}
+      <section id="quienes-somos" style={{ 
+        padding: isMobile ? '80px 24px' : '120px 24px', 
+        textAlign: 'center', 
+        background: '#f9f9fb', 
+        borderTop: '1px solid #f2f2f2',
+        borderBottom: '1px solid #f2f2f2'
+      }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <h2 style={{ 
+            fontSize: 'clamp(32px, 6vw, 52px)', 
+            fontWeight: 800, 
+            lineHeight: 1.1, 
+            color: '#1d1d1f', 
+            marginBottom: 44, 
+            letterSpacing: '-1.5px' 
+          }}>
+            Quienes Somos
           </h2>
-          <p style={{ fontSize: 'clamp(28px, 5vw, 48px)', fontWeight: 700, lineHeight: 1.1, color: '#1d1d1f', marginBottom: 80, letterSpacing: '-1.5px' }}>
-            Excelencia en cada trazo. <br/>
-            Cuidado en cada detalle.
-          </p>
           
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 60 }}>
-            <div>
-              <div style={{ background: '#f5f5f7', width: 56, height: 56, borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-                <User size={28} />
-              </div>
-              <h3 style={{ fontSize: '21px', fontWeight: 600, marginBottom: 12 }}>Personalización</h3>
-              <p style={{ fontSize: '16px', color: '#6e6e73', lineHeight: 1.6 }}>Entendemos que cada persona es única. Adaptamos cada técnica a tus necesidades específicas.</p>
-            </div>
-            <div>
-              <div style={{ background: '#f5f5f7', width: 56, height: 56, borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-                <ShieldCheck size={28} />
-              </div>
-              <h3 style={{ fontSize: '21px', fontWeight: 600, marginBottom: 12 }}>Seguridad</h3>
-              <p style={{ fontSize: '16px', color: '#6e6e73', lineHeight: 1.6 }}>Protocolos de esterilización de grado médico y productos premium certificados.</p>
-            </div>
-            <div>
-              <div style={{ background: '#f5f5f7', width: 56, height: 56, borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-                <Heart size={28} />
-              </div>
-              <h3 style={{ fontSize: '21px', fontWeight: 600, marginBottom: 12 }}>Bienestar</h3>
-              <p style={{ fontSize: '16px', color: '#6e6e73', lineHeight: 1.6 }}>Más que un servicio, es un momento de pausa y reconexión en un ambiente de paz.</p>
-            </div>
-          </div>
+          <button style={{
+            background: '#1d1d1f', 
+            color: '#fff', 
+            border: 'none',
+            padding: '18px 44px', 
+            borderRadius: '40px', 
+            fontSize: '16px', 
+            fontWeight: 600,
+            cursor: 'default',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+          }}>
+            Descubre más
+          </button>
         </div>
       </section>
+
 
       {/* ─── SERVICES CATEGORIES ────────────────────────────────── */}
       <section id="services" style={{ padding: '120px 24px', background: '#fff' }}>
@@ -381,6 +381,42 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ─── NUESTROS PRODUCTOS ────────────────────────────────────────── */}
+      <section id="productos" style={{ 
+        padding: isMobile ? '80px 24px' : '120px 24px', 
+        textAlign: 'center', 
+        background: '#f9f9fb', 
+        borderTop: '1px solid #f2f2f2',
+        borderBottom: '1px solid #f2f2f2'
+      }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <h2 style={{ 
+            fontSize: 'clamp(32px, 6vw, 52px)', 
+            fontWeight: 800, 
+            lineHeight: 1.1, 
+            color: '#1d1d1f', 
+            marginBottom: 44, 
+            letterSpacing: '-1.5px' 
+          }}>
+            Nuestros Productos
+          </h2>
+          
+          <button style={{
+            background: '#1d1d1f', 
+            color: '#fff', 
+            border: 'none',
+            padding: '18px 44px', 
+            borderRadius: '40px', 
+            fontSize: '16px', 
+            fontWeight: 600,
+            cursor: 'default',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+          }}>
+            Descubre más
+          </button>
         </div>
       </section>
 

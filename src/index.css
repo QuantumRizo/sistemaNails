@@ -9,21 +9,22 @@
   --border: #e5e7eb;
   --border-2: #d1d5db;
   /* Colores de Marca */
-  --primary: #16a34a;
-  /* Verde Esmeralda (como Dif. Caja) */
+  --kpi: #16a34a;
+  --primary: #88B04B;
+  /* Verde Esmeralda */
   --accent: #88B04B;
   /* Verde Hoja - Acentuación */
   --accent-light: rgba(136, 176, 75, 0.08);
   --accent-mid: rgba(136, 176, 75, 0.18);
-  --primary-light: rgba(22, 163, 74, 0.1);
-  --kpi-gradient: linear-gradient(135deg, #16a34a 0%, #0f7a35 100%);
+  --primary-light: rgba(136, 176, 75, 0.1);
+  --kpi-gradient: linear-gradient(135deg, var(--kpi) 0%, #0f7a35 100%);
 
   /* Imagen de Fondo Landing (debe estar en la carpeta public) */
   --hero-image: url('/esmaltado permanente_compressed.webp');
   --text-1: #111827;
   --text-2: #6b7280;
   --text-3: #9ca3af;
-  --success: #16a34a;
+  --success: var(--kpi);
   --success-bg: rgba(22, 163, 74, 0.1);
   --danger: #dc2626;
   --danger-bg: rgba(220, 38, 38, 0.08);
@@ -486,13 +487,11 @@ body,
 
 /* ── Disponible (virtual) column ─────────────────────────── */
 .emp-col-disponible .slot-cell {
-  background-image: repeating-linear-gradient(
-    -45deg,
-    transparent,
-    transparent 4px,
-    rgba(136, 176, 75, 0.04) 4px,
-    rgba(136, 176, 75, 0.04) 8px
-  );
+  background-image: repeating-linear-gradient(-45deg,
+      transparent,
+      transparent 4px,
+      rgba(136, 176, 75, 0.04) 4px,
+      rgba(136, 176, 75, 0.04) 8px);
 }
 
 .emp-col-disponible .slot-cell:hover {
