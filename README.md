@@ -1,88 +1,107 @@
-# Muy Muy Beauty
+# MUYMUY Beauty Studio - Monorepo Architecture
 
-## Project Description
+## Descripción del Proyecto
 
-An integrated management system for beauty and nail salons. The platform provides advanced tools to manage appointments, client profiles, inventory control, point of sale (POS) operations, billing, and statistical reports, optimizing the daily operations of the business in a professional manner.
+Un ecosistema digital completo para la administración y experiencia de clientes en MUYMUY Beauty Studio. 
+El proyecto está estructurado como un **Monorepo** moderno que divide las responsabilidades entre una plataforma administrativa vía Web y una aplicación móvil nativa para la experiencia directa de las clientas.
 
-## Key Features
+---
 
-*   **Schedule and Appointment Management**: Centralized booking administration, professional assignment, and availability tracking.
-*   **Point of Sale (POS) and Direct Sales**: Registration of services and products, local payment gateway integrations, ticket generation, and revenue control.
-*   **Client Management (CRM)**: Detailed profiles, service history, clinical notes, and contact information.
-*   **Inventory Control**: Administration of the product catalog, stock monitoring, and salon supplies.
-*   **Statistics and Reports Dashboard**: Key business metrics, financial performance, and interactive data visualization.
-*   **Staff and Attendance Management**: Employee attendance tracking and professional staff administration.
-*   **Marketing and Billing Module**: Tools for client loyalty programs and payment receipt issuance.
-*   **Authentication and Roles**: Secure login system and access control based on user profiles.
+## 🏗 Arquitectura y Estructura
 
-## Technologies Used
+El repositorio utiliza *npm workspaces* gestionados desde el `package.json` raíz, aunque la aplicación móvil se mantiene deliberadamente aislada para evitar conflictos de dependencias nativas.
 
-*   **Frontend**: React 19
-*   **Programming Language**: TypeScript
-*   **Build Tool**: Vite
-*   **Styling**: Tailwind CSS v4
-*   **Global State Management**: Zustand
-*   **Server State & Data Fetching**: React Query (@tanstack/react-query)
-*   **Charts and Visualization**: Recharts
-*   **Iconography**: Lucide React
-*   **Backend / BaaS**: Supabase (PostgreSQL Database, Authentication, and Storage)
-*   **Date Formatting**: date-fns
+```
+muy_muy_beauty/
+├── apps/
+│   ├── web/        (Plataforma Administrativa y React SPA Vercel)
+│   └── mobile/     (Aplicación Móvil iOS/Android en Expo React Native)
+├── package.json    (Raíz Workspace npm)
+└── vercel.json     (Reglas de ruteo y despliegue Nube)
+```
 
-## Prerequisites
+---
 
-*   Node.js (LTS version recommended, e.g., v20 or v22)
-*   A package manager (npm, yarn, pnpm, or bun)
-*   Credentials for a Supabase project
+## 🌐 Módulo Web (`apps/web`)
 
-## Installation and Setup
+Sistema integral diseñado para la gestión y control del estudio.
+- **Frontend**: React 19.2 + TypeScript + Vite 5.4.x
+- **Gestión de Estado**: Zustand & React Query.
+- **Estilos**: TailwindCSS v4.
+- **Ruteo**: SPA gestionada en Node.js mediante reglas en `vercel.json`.
 
-1.  **Clone the repository** and navigate to the directory:
-    ```bash
-    git clone <repository-url>
-    cd muy_muy_beauty
-    ```
+> [!WARNING]
+> **Bloqueo de Versión Vite**:
+> La versión de Vite se redujo deliberadamente al release `5.4.x` y el plugin `@vitejs/plugin-react` a la v4. **Prohibido actualizar a Vite 6 o Vite 8**. Las versiones superiores utilizan `rolldown`, lo cual causa errores fatales de *Native Bindings* (`@rolldown/binding-linux-x64-gnu`) en contenedores Linux de Vercel.
 
-2.  **Install dependencies**:
-    ```bash
-    npm install
-    # or if using bun:
-    # bun install
-    ```
+---
 
-3.  **Configure environment variables**:
-    Create a `.env` file in the root of the project and define the following variables with your Supabase credentials:
-    ```env
-    VITE_SUPABASE_URL=your_supabase_url
-    VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-    ```
+## 📱 Módulo Móvil (`apps/mobile`)
 
-4.  **Start the development server**:
-    ```bash
-    npm run dev
-    ```
+App diseñada para acercar el ecosistema de servicios a los clientes. Permite ver el catálogo, agendar citas en tiempo real ligadas a las sucursales, ver el historial y gestionar su perfil.
+- **Framework**: React Native 0.81.4 bajo Expo SDK 54.0.0.
+- **Frontend**: React 19.1 + TypeScript.
+- **Estado**: Zustand + Supabase en local con persistencia.
+- **Manejo de Rutas**: `expo-router` (requiere dependencia `expo-linking` forzada en SDK 54).
 
-The application will be available locally, typically at `http://localhost:5173`.
+> [!CAUTION]
+> **Aislamiento Móvil**:
+> El directorio `apps/mobile` **NO** se encuentra mapeado dentro de los `workspaces` del `package.json` raíz. Esto se hizo a propósito para asegurar que dependencias muy estrictas exigidas por React Native no colisionen con las dependencias de la subcarpeta `web`. **Comandos en la app móvil deben siempre ejecutarse ubicándose físicamente dentro de `apps/mobile/`**.
 
-## Project Structure
+---
 
-The main source code is located in the `src/` folder:
+## ☁️ Backend y Base de Datos
 
-*   `src/pages/`: Main views of the application (Schedule, POS, Clients, Dashboards, etc.).
-*   `src/components/`: Reusable user interface components.
-*   `src/hooks/`: Custom React hooks to encapsulate logic.
-*   `src/context/`: React contexts for shared state.
-*   `src/lib/`: Configuration for external integrations (e.g., the Supabase web client).
-*   `src/utils/`: General utility functions and formatters.
-*   `src/types/`: TypeScript interface and type definitions.
-*   `supabase/`: Files for local database migrations, configurations, and edge functions.
+Todo el ecosistema se apoya sobre una infraestructura ágil usando **Supabase**.
+- Autenticación y Perfiles.
+- Bases de Datos PostgreSQL Relacional (Citas, Bloqueos de agenda, Clientes, Sucursales y Empleados).
+- Seguridad y políticas de Row Level Security (RLS) configuradas por entorno.
 
-## Available Scripts
+---
 
-*   `npm run dev`: Runs the application in development mode with Hot Module Replacement (HMR).
-*   `npm run build`: Compiles the project using TypeScript and generates static files for production.
-*   `npm run lint`: Runs the linter (ESLint) to ensure code quality and consistency.
-*   `npm run preview`: Starts a local static server to test the generated production build.
+## ⚙️ Instalación y Scripts Comunes
 
-## License
+### Requisitos Previos
+- Node.js (v24/v25 recomendado).
+- Cuenta de Supabase válida con sus llaves.
 
-Private / Proprietary Software. All rights reserved.
+### Configuración del Entorno Virtual Local
+En la terminal (macOS/Unix), asegúrate de clonar y correr la instalación garantizando un correcto enlace usando los lockfiles existentes:
+
+```bash
+git clone https://github.com/QuantumRizo/muy_muy_beauty.git
+cd muy_muy_beauty
+
+# 1. Instalar depedencias web/globales garantizando estabilidad (En la ráz)
+npm install
+
+# 2. Levantar el proyecto Web
+npm run web
+
+# 3. Instalar y Levantar la App Móvil (Desde su propia carpeta)
+cd apps/mobile
+npm install
+npx expo start --ios
+```
+
+### Variables de Entorno (`.env`)
+Crear un entorno `.env` local en la raíz dependiendo del módulo que se vaya a invocar:
+```env
+# Ejemplo para la aplicación web
+VITE_SUPABASE_URL=__su_url__
+VITE_SUPABASE_ANON_KEY=__su_anon_key__
+
+# En apps/mobile
+EXPO_PUBLIC_SUPABASE_URL=__su_url__
+EXPO_PUBLIC_SUPABASE_ANON_KEY=__su_anon_key__
+```
+
+---
+
+## 🔒 Auditoría y Salud del Proyecto (Actualización Vercel)
+A causa del ciclo de compilación en *Vercel*:
+1. Todo intento de usar `bun install` mediante plataformas nube puede causar colisiones si se encuentra con lockfiles viejos. Asegúrese siempre de commitir el archivo `package-lock.json` de la raíz tras toda actualización importante para forzar a Vercel a acatar los árboles fijos desarrollados en local en macOS.
+2. SPA catch-all (Admin, auth, dashboard) siempre recurrirá al archivo `vercel.json` estático anidado en el directorio especificado de despliegue.
+
+---
+*Privado / Software Propietario. Todos los derechos reservados a MUYMUY Beauty.*
