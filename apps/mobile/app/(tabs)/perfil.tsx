@@ -45,7 +45,7 @@ export default function PerfilScreen() {
   }
 
   if (loading) return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8f8f8' }}>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff' }}>
       <ActivityIndicator color="#88B04B" />
     </View>
   )
@@ -115,7 +115,7 @@ const infoStyles = StyleSheet.create({
 })
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f8f8' },
+  container: { flex: 1, backgroundColor: '#ffffff' },
   content: { paddingTop: 60, paddingHorizontal: 20, paddingBottom: 60, alignItems: 'center' },
   pageTitle: { fontSize: 26, fontWeight: '800', color: '#1d1d1f', alignSelf: 'flex-start', marginBottom: 8, letterSpacing: -0.5 },
   pageSub: { fontSize: 15, color: '#6e6e73', alignSelf: 'flex-start', marginBottom: 32 },
