@@ -97,6 +97,7 @@ export default function NuevaCitaModal({
           estado: 'Programada',
           duracion_manual_slots: effectiveSlots,
           comentarios: comentarios || null,
+          notas_cliente: null,
           ticket_id: null,
         },
         servicioIds: selected,
