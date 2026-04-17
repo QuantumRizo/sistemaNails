@@ -56,6 +56,7 @@ interface Props {
   weekDates: Date[]          // 7 Date objects, Mon–Sun
   empleadas: Empleada[]
   sucursal?: Sucursal | null // Needed to read num_cabinas
+  isLoading?: boolean
   citas: Cita[]
   bloqueos: BloqueoAgenda[]
   onSlotClick: (empleadaId: string, hora: string, fecha: string) => void
@@ -64,18 +65,26 @@ interface Props {
 }
 
 export default function AgendaGrid({
-  weekDates, empleadas, sucursal, citas, bloqueos,
+  weekDates, empleadas, sucursal, isLoading, citas, bloqueos,
   onSlotClick, onCitaClick, onBloqueoClick,
 }: Props) {
 
   // Build full column list: real employees + virtual "Disponible" columns
+  // If loading, show a few placeholders to maintain width
+  const placeholderCols: Column[] = Array.from({ length: 5 }, (_, i) => ({
+    id: `placeholder-${i}`,
+    nombre: '...',
+    isVirtual: true as const,
+  }))
+
   const numIndicator = sucursal?.num_cabinas ?? 1
   const disponibleCols: DisponibleCol[] = Array.from({ length: numIndicator }, (_, i) => ({
     id: `disponible-${i + 1}`,
     nombre: `Disponible ${i + 1}`,
     isVirtual: true as const,
   }))
-  const columns: Column[] = [...empleadas, ...disponibleCols]
+
+  const columns: Column[] = isLoading ? placeholderCols : [...empleadas, ...disponibleCols]
   const mainGridRef  = useRef<HTMLDivElement>(null)
   const timeColRef   = useRef<HTMLDivElement>(null)
   const daysHeaderRef = useRef<HTMLDivElement>(null)
@@ -148,7 +157,8 @@ export default function AgendaGrid({
     return bloqueos.filter((b) => b.empleada_id === empId && b.fecha === fechaStr)
   }
 
-  if (columns.length === 0) {
+  // Si no está cargando y no hay columnas, mostrar estado vacío
+  if (!isLoading && columns.length === 0) {
     return (
       <div className="empty-state">
         <p>No hay profesionales activas en esta sucursal.</p>
@@ -191,7 +201,7 @@ export default function AgendaGrid({
                     {columns.map((col) => (
                       <div
                         key={col.id}
-                        className={`emp-header-cell${isVirtual(col) ? ' emp-header-disponible' : ''}`}
+                        className={`emp-header-cell${isVirtual(col) ? ' emp-header-disponible' : ''}${col.id.startsWith('placeholder') ? ' is-placeholder' : ''}`}
                         style={{ width: colWidth }}
                         title={col.nombre}
                       >

@@ -41,16 +41,22 @@ function AdminShell() {
   const [validatingCita, setValidatingCita] = useState<Cita | null>(null)
   const [ticketCita, setTicketCita] = useState<Cita | null>(null)
 
-  // Muestra spinner si:
-  // 1. Aún no sabemos si hay sesión (loading)
-  // 2. Hay sesión pero el perfil/rol del usuario aún no se ha cargado
-  if (loading || (session && !profile)) return (
+  // 1. Aún no sabemos si hay sesión
+  if (loading) return (
     <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
       <RefreshCw size={32} className="animate-spin" style={{ color: 'var(--accent)' }} />
     </div>
   )
 
+  // 2. Sin sesión → Login
   if (!session) return <Navigate to="/login" replace />
+
+  // 3. Sesión activa pero perfil todavía cargando (breve momento)
+  if (profile === undefined) return (
+    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
+      <RefreshCw size={32} className="animate-spin" style={{ color: 'var(--accent)' }} />
+    </div>
+  )
 
   // Sección inicial según el rol (el perfil ya está garantizado aquí)
   const isEmpleado = profile?.rol === 'empleado'

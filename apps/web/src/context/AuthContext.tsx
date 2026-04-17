@@ -14,7 +14,7 @@ export interface UserProfile {
 interface AuthContextType {
   session: Session | null
   user: User | null
-  profile: UserProfile | null
+  profile: UserProfile | null | undefined // undefined = todavía cargando, null = no encontrado
   loading: boolean
   signOut: () => Promise<void>
 }
@@ -29,7 +29,8 @@ const fetchProfile = async (uid: string): Promise<UserProfile | null> => {
       .eq('id', uid)
       .single()
     return data ?? null
-  } catch {
+  } catch (error) {
+    console.error('[Auth] Error fetching profile:', error)
     return null
   }
 }
@@ -37,40 +38,33 @@ const fetchProfile = async (uid: string): Promise<UserProfile | null> => {
 export function AuthProvider({ children, queryClient }: { children: React.ReactNode, queryClient: QueryClient }) {
   const [session, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [profile, setProfile] = useState<UserProfile | null | undefined>(undefined)
   const [loading, setLoading] = useState(true)
   const profileFetchedFor = useRef<string | null>(null)
 
   useEffect(() => {
-    // Carga inicial: obtener sesión. Loading=false en cuanto se sabe si hay sesión o no.
-    supabase.auth.getSession()
-      .then(async ({ data: { session: s } }) => {
-        setSession(s)
-        setUser(s?.user ?? null)
-        if (s?.user && profileFetchedFor.current !== s.user.id) {
-          profileFetchedFor.current = s.user.id
-          const p = await fetchProfile(s.user.id)
-          setProfile(p)
-        }
-      })
-      .catch(err => console.error('[Auth] getSession() falló:', err))
-      .finally(() => setLoading(false))
-
-    // Cambios posteriores (login, logout, token refresh)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, s) => {
-      if (event === 'INITIAL_SESSION') return
-
+    // Usamos SOLO onAuthStateChange (incluyendo INITIAL_SESSION para la carga inicial).
+    // setLoading(false) se llama SIEMPRE de inmediato (síncrono), sin esperar fetchProfile.
+    // El perfil se carga en background para no bloquear la UI.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s)
       setUser(s?.user ?? null)
-      setLoading(false)
+      setLoading(false) // SIEMPRE inmediato, nunca espera el perfil
 
       if (s?.user) {
         if (profileFetchedFor.current !== s.user.id) {
-          profileFetchedFor.current = s.user.id
-          const p = await fetchProfile(s.user.id)
-          setProfile(p)
+          const uid = s.user.id
+          profileFetchedFor.current = uid
+          setProfile(undefined) // Marcamos como "cargando"
+          // Fetch en background — no bloqueamos aquí
+          fetchProfile(uid).then(p => {
+            if (profileFetchedFor.current === uid) {
+              setProfile(p)
+            }
+          })
         }
       } else {
+        // Logout o sin sesión
         profileFetchedFor.current = null
         setProfile(null)
       }

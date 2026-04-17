@@ -58,7 +58,7 @@ export default function AgendaPage({ preselectedCliente, onClearPreselected, onV
   const activeSucursal            = sucursalId
   const { data: sucursales = [] }  = useSucursales()
   const activeSucursalObj          = sucursales.find(s => s.id === activeSucursal) ?? null
-  const { data: empleadas = [] }  = useEmpleadas(activeSucursal || undefined)
+  const { data: empleadas = [], isLoading: isLoadingEmpleadas }  = useEmpleadas(activeSucursal || undefined)
   const { data: citas = [] }      = useCitasSemana(inicioStr, finStr, activeSucursal)
   const { data: bloqueos = [] }   = useBloqueosSemana(inicioStr, finStr)
 
@@ -179,6 +179,7 @@ export default function AgendaPage({ preselectedCliente, onClearPreselected, onV
         weekDates={weekDates}
         empleadas={empleadas}
         sucursal={activeSucursalObj}
+        isLoading={isLoadingEmpleadas}
         citas={citas}
         bloqueos={bloqueos}
         onSlotClick={handleSlotClick}
