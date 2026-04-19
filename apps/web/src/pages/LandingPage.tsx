@@ -17,7 +17,7 @@ export default function LandingPage() {
   }, [])
 
   return (
-    <div style={{ background: '#fff', color: '#1d1d1f', fontFamily: '"Inter", -apple-system, sans-serif' }}>
+    <div className="landing-editorial" style={{ background: '#fff', color: '#1d1d1f', fontFamily: '"Inter", -apple-system, sans-serif' }}>
       <LandingNavbar />
       <HeroSection isMobile={isMobile} />
       <QuienesSomosSection isMobile={isMobile} />
@@ -26,6 +26,15 @@ export default function LandingPage() {
       <ContactSection />
 
       <style>{`
+        .landing-editorial h1, 
+        .landing-editorial h2, 
+        .landing-editorial h3 {
+          font-family: 'Bodoni Moda', serif !important;
+          font-weight: 800;
+          letter-spacing: -2px;
+          text-transform: uppercase;
+        }
+
         @media (max-width: 768px) {
           .desktop-only { display: none; }
         }

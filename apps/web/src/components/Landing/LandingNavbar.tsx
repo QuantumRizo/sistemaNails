@@ -22,6 +22,9 @@ export default function LandingNavbar() {
     }
   }, [])
 
+  const textColor = isScrolled ? '#1d1d1f' : (isMobile ? '#1d1d1f' : '#fff')
+  const logoFilter = isScrolled ? 'none' : (isMobile ? 'none' : 'brightness(0) invert(1)')
+
   return (
     <nav style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000,
@@ -29,24 +32,27 @@ export default function LandingNavbar() {
       backdropFilter: isScrolled ? 'blur(20px)' : 'none',
       height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: '0 24px', transition: 'all 0.4s ease',
-      borderBottom: (isScrolled || isMobile) ? '1px solid #f2f2f2' : 'none'
+      borderBottom: (isScrolled || isMobile) ? '1px solid #f2f2f2' : 'none',
+      color: textColor
     }}>
       <div style={{ maxWidth: '1100px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <img src="/logoVertical.png" alt="MUYMUY" style={{ height: '32px' }} />
+          <img src="/logoVertical.png" alt="MUYMUY" style={{ height: '32px', filter: logoFilter, transition: 'all 0.4s ease' }} />
           <span style={{ fontWeight: 700, fontSize: '18px', letterSpacing: '-0.5px' }}>MUYMUY</span>
         </div>
         <div style={{ display: 'flex', gap: 30, fontSize: '14px', fontWeight: 500 }} className="desktop-only">
-          <a href="#welcome" style={{ textDecoration: 'none', color: 'inherit' }}>Estudio</a>
-          <a href="#services" style={{ textDecoration: 'none', color: 'inherit' }}>Servicios</a>
-          <a href="#contact" style={{ textDecoration: 'none', color: 'inherit' }}>Contacto</a>
+          <a href="#welcome" style={{ textDecoration: 'none', color: 'inherit', transition: 'all 0.3s' }}>Estudio</a>
+          <a href="#services" style={{ textDecoration: 'none', color: 'inherit', transition: 'all 0.3s' }}>Servicios</a>
+          <a href="#contact" style={{ textDecoration: 'none', color: 'inherit', transition: 'all 0.3s' }}>Contacto</a>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
           <Link to="/reservar" style={{
-            background: '#1d1d1f', color: '#fff', border: 'none',
+            background: isScrolled ? '#1d1d1f' : (isMobile ? '#1d1d1f' : '#fff'), 
+            color: isScrolled ? '#fff' : (isMobile ? '#fff' : '#1d1d1f'), 
+            border: 'none',
             padding: '8px 18px', borderRadius: '20px', fontSize: '13px', fontWeight: 600,
-            cursor: 'pointer', textDecoration: 'none'
+            cursor: 'pointer', textDecoration: 'none', transition: 'all 0.4s ease'
           }} className="desktop-only">
             Agendar Online
           </Link>
@@ -54,7 +60,7 @@ export default function LandingNavbar() {
           <button
             onClick={() => setIsMenuOpen(true)}
             className="mobile-only"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1d1d1f', display: 'flex', alignItems: 'center' }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: textColor, display: 'flex', alignItems: 'center' }}
           >
             <Menu size={24} />
           </button>
