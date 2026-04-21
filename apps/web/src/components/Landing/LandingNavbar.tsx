@@ -36,14 +36,14 @@ export default function LandingNavbar() {
       color: textColor
     }}>
       <div style={{ maxWidth: '1100px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', color: 'inherit' }}>
           <img src="/logoVertical.png" alt="MUYMUY" style={{ height: '32px', filter: logoFilter, transition: 'all 0.4s ease' }} />
           <span style={{ fontWeight: 700, fontSize: '18px', letterSpacing: '-0.5px' }}>MUYMUY</span>
-        </div>
+        </Link>
         <div style={{ display: 'flex', gap: 30, fontSize: '14px', fontWeight: 500 }} className="desktop-only">
-          <a href="#welcome" style={{ textDecoration: 'none', color: 'inherit', transition: 'all 0.3s' }}>Estudio</a>
-          <a href="#services" style={{ textDecoration: 'none', color: 'inherit', transition: 'all 0.3s' }}>Servicios</a>
-          <a href="#contact" style={{ textDecoration: 'none', color: 'inherit', transition: 'all 0.3s' }}>Contacto</a>
+          <Link to="/#welcome" style={{ textDecoration: 'none', color: 'inherit', transition: 'all 0.3s' }}>Estudio</Link>
+          <Link to="/#services" style={{ textDecoration: 'none', color: 'inherit', transition: 'all 0.3s' }}>Servicios</Link>
+          <Link to="/#contact" style={{ textDecoration: 'none', color: 'inherit', transition: 'all 0.3s' }}>Contacto</Link>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
@@ -79,9 +79,9 @@ export default function LandingNavbar() {
             <span style={{ fontWeight: 700, fontSize: '20px', letterSpacing: '-0.5px' }}>MUYMUY</span>
           </div>
 
-          <a href="#welcome" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Estudio</a>
-          <a href="#services" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Servicios</a>
-          <a href="#contact" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Contacto</a>
+          <Link to="/#welcome" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Estudio</Link>
+          <Link to="/#services" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Servicios</Link>
+          <Link to="/#contact" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Contacto</Link>
 
           <div style={{ marginTop: 'auto' }}>
             <Link to="/reservar" onClick={() => setIsMenuOpen(false)} style={{

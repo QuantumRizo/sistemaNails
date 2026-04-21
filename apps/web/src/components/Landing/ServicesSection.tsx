@@ -1,4 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
+
+const SLUG_MAP: Record<string, string> = {
+  'Esmaltado Permanente': 'esmaltado-permanente',
+  'Uñas Esculpidas': 'unas-esculpidas',
+  'Eyes & Brows': 'eyes-brows',
+  'Manicura & Spa': 'manicura-spa',
+  'Cuidado Facial': 'cuidado-facial',
+  'Masajes Terapéuticos': 'masajes-terapeuticos',
+  'Pedicura Avanzada': 'pedicura-avanzada',
+  'Nail Art & Diseño': 'nail-art-diseno',
+  'Depilación Láser': 'depilacion-laser'
+}
 
 const ROWS: {
   height: string
@@ -16,7 +29,7 @@ const ROWS: {
       {
         title: 'Esmaltado Permanente',
         image: '/esmaltado permanente_compressed.webp',
-        description: 'Técnica revolucionaria de larga duración and 20Free.',
+        description: 'Técnica revolucionaria de larga duración con acabado profesional.',
         flex: '1.2',
         radius: '32px 140px 60px 32px / 32px 120px 80px 32px',
       },
@@ -102,7 +115,7 @@ function Tile({
   isMobile: boolean
 }) {
   const [visible, setVisible] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const ref = useRef<HTMLAnchorElement>(null)
 
   useEffect(() => {
     const io = new IntersectionObserver(
@@ -114,10 +127,13 @@ function Tile({
   }, [])
 
   return (
-    <div
+    <Link
+      to={`/servicios/${SLUG_MAP[tile.title] || ''}`}
       ref={ref}
       className="svc-tile"
       style={{
+        display: 'block',
+        textDecoration: 'none',
         width: isMobile ? '100%' : 'auto',
         flex: isMobile ? 'none' : `${tile.flex} ${tile.flex} 0%`,
         height: isMobile ? '300px' : rowHeight,
@@ -125,7 +141,6 @@ function Tile({
         borderRadius: isMobile ? '28px' : tile.radius,
         overflow: 'hidden',
         cursor: 'pointer',
-        /* Desktop animation — overridden to visible on mobile via CSS below */
         opacity: visible ? 1 : 0,
         transform: visible ? 'translateY(0)' : 'translateY(40px)',
         transition: `opacity 0.9s ease ${globalIndex * 0.1}s, transform 1.1s cubic-bezier(0.2, 1, 0.3, 1) ${globalIndex * 0.1}s`,
@@ -149,11 +164,11 @@ function Tile({
         <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '14px', lineHeight: 1.45, marginBottom: 16, maxWidth: '95%' }}>
           {tile.description}
         </p>
-        <a href="#reservar" style={{ color: '#fff', fontSize: '13px', fontWeight: 500, textDecoration: 'underline', textUnderlineOffset: '4px', opacity: 0.9 }}>
+        <span style={{ color: '#fff', fontSize: '13px', fontWeight: 500, textDecoration: 'underline', textUnderlineOffset: '4px', opacity: 0.9 }}>
           Descubre más
-        </a>
+        </span>
       </div>
-    </div>
+    </Link>
   )
 }
 

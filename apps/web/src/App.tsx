@@ -13,6 +13,7 @@ import { SucursalProvider } from './context/SucursalContext'
 import LoginPage from './pages/LoginPage'
 import LandingPage from './pages/LandingPage'
 import BookingPage from './pages/BookingPage'
+import ServiceFamilyPage from './pages/ServiceFamilyPage'
 import { RefreshCw } from 'lucide-react'
 
 import InicioPage from "./pages/InicioPage"
@@ -98,6 +99,7 @@ export default function App() {
               <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<LandingPage />} />
+                <Route path="/servicios/:slug" element={<ServiceFamilyPage />} />
                 <Route path="/reservar" element={<BookingPage />} />
                 <Route path="/login" element={<AuthWrapper />} />
                 
