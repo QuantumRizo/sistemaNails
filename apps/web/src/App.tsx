@@ -32,7 +32,6 @@ const queryClient = new QueryClient({
 function AdminShell() {
   const { session, loading, profile } = useAuthContext()
   const location = useLocation()
-  const navigate = useNavigate()
 
   // 1. Auth state still loading
   if (loading) return (
