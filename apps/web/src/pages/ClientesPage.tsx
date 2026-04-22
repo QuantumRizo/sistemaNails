@@ -47,7 +47,35 @@ export default function ClientesPage({ onGoToAgenda }: Props) {
       {/* Results Table */}
       <div className="table-container">
         {isLoading && (
-          <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-3)' }}>Buscando...</div>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Nº Cliente</th>
+                <th>Teléfono</th>
+                <th>E-mail</th>
+                <th>Sucursal</th>
+                <th style={{ textAlign: 'right' }}>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...Array(5)].map((_, i) => (
+                <tr key={i} style={{ pointerEvents: 'none' }}>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div className="cliente-avatar-sm" style={{ background: 'var(--border)', animation: 'skeleton-pulse 1.5s infinite ease-in-out' }}></div>
+                      <div style={{ width: 120, height: 12, background: 'var(--border)', borderRadius: 4, animation: 'skeleton-pulse 1.5s infinite ease-in-out' }}></div>
+                    </div>
+                  </td>
+                  <td><div style={{ width: 40, height: 12, background: 'var(--border)', borderRadius: 4, animation: 'skeleton-pulse 1.5s infinite ease-in-out' }}></div></td>
+                  <td><div style={{ width: 80, height: 12, background: 'var(--border)', borderRadius: 4, animation: 'skeleton-pulse 1.5s infinite ease-in-out' }}></div></td>
+                  <td><div style={{ width: 140, height: 12, background: 'var(--border)', borderRadius: 4, animation: 'skeleton-pulse 1.5s infinite ease-in-out' }}></div></td>
+                  <td><div style={{ width: 60, height: 12, background: 'var(--border)', borderRadius: 4, animation: 'skeleton-pulse 1.5s infinite ease-in-out' }}></div></td>
+                  <td style={{ textAlign: 'right' }}><div style={{ width: 70, height: 24, background: 'var(--border)', borderRadius: 20, animation: 'skeleton-pulse 1.5s infinite ease-in-out', marginLeft: 'auto' }}></div></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
         {!isLoading && query.length >= 2 && clientes.length === 0 && (
           <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-3)' }}>

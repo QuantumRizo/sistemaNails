@@ -3,12 +3,14 @@ import { FileText, Upload, Download, Trash2, RefreshCw, File } from 'lucide-reac
 import { supabase } from '../../lib/supabase'
 import type { Documento } from '../../types/database'
 import { useToast } from '../Common/Toast'
+import ConfirmDialog from '../Common/ConfirmDialog'
 
 export default function DocumentosTab() {
   const [docs, setDocs] = useState<Documento[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const showToast = useToast()
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', action: () => {} })
 
   useEffect(() => {
     fetchDocs()
@@ -65,14 +67,19 @@ export default function DocumentosTab() {
     }
   }
 
-  const handleDelete = async (doc: Documento) => {
-    if (!confirm('¿Eliminar este documento?')) return
-    
-    const { error } = await supabase.from('documentos').delete().eq('id', doc.id)
-    if (!error) {
-      setDocs(docs.filter(d => d.id !== doc.id))
-      showToast('Documento eliminado', 'success')
-    }
+  const handleDelete = (doc: Documento) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Eliminar Documento',
+      message: `¿Eliminar "${doc.nombre}"? Esta acción no se puede deshacer.`,
+      action: async () => {
+        const { error } = await supabase.from('documentos').delete().eq('id', doc.id)
+        if (!error) {
+          setDocs(docs.filter(d => d.id !== doc.id))
+          showToast('Documento eliminado', 'success')
+        }
+      }
+    })
   }
 
   const fmtSize = (bytes: number) => {
@@ -123,6 +130,19 @@ export default function DocumentosTab() {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        isDanger
+        confirmText="Eliminar"
+        onConfirm={() => {
+          confirmDialog.action()
+          setConfirmDialog({ ...confirmDialog, isOpen: false })
+        }}
+        onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+      />
     </div>
   )
 }

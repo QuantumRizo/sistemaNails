@@ -360,7 +360,7 @@ export default function GestionCitaModal({ cita, onClose, onValidar }: Props) {
                       <button 
                         type="button" 
                         className="btn-ghost" 
-                        style={{ padding: 2, cursor: (isLocked || isValidated) ? 'pointer' : 'pointer' }}
+                        style={{ padding: 2, cursor: (isLocked || isValidated) ? 'default' : 'pointer' }}
                         onClick={() => setManualSlots((manualSlots ?? autoSlots) + 1)}
                         disabled={isLocked || isValidated}
                       >

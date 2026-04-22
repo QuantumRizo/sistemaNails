@@ -36,6 +36,8 @@ export default function FormularioCliente({ onCreated, onClose }: Props) {
   // Estados para validación en tiempo real
   const [checking, setChecking] = useState({ phone: false, email: false })
   const [errors, setErrors] = useState({ phone: '', email: '' })
+  const [submitted, setSubmitted] = useState(false)
+  const [saveSuccess, setSaveSuccess] = useState(false)
 
   const set = (k: string, v: string) => {
     setForm((f) => ({ ...f, [k]: v }))
@@ -89,8 +91,13 @@ export default function FormularioCliente({ onCreated, onClose }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setSubmitted(true)
+
     const { nombre_completo, telefono_cel, email, ...extra } = form
     
+    // Validación básica antes de enviar
+    if (!nombre_completo.trim()) return
+
     if (telefono_cel && telefono_cel.length !== 10) {
       toast('El teléfono debe tener exactamente 10 dígitos (Ej: 5512345678)', 'error')
       return
@@ -113,8 +120,12 @@ export default function FormularioCliente({ onCreated, onClose }: Props) {
 
     try {
       const result = await crearCliente.mutateAsync(payload)
-      onCreated(result as Cliente)
+      setSaveSuccess(true)
       toast('Cliente creado con éxito', 'success')
+      // Esperar un momento para mostrar el estado de éxito antes de cerrar
+      setTimeout(() => {
+        onCreated(result as Cliente)
+      }, 1500)
     } catch (err: any) {
       console.error('Error al crear cliente:', err)
       // Error 23505 es "unique_violation" en PostgreSQL (Supabase)
@@ -125,6 +136,30 @@ export default function FormularioCliente({ onCreated, onClose }: Props) {
         toast('Error al guardar el cliente. Revisa los datos.', 'error')
       }
     }
+  }
+
+  if (saveSuccess) {
+    return (
+      <div className="modal-overlay">
+        <div className="modal-box" style={{ maxWidth: 400, textAlign: 'center', padding: '48px 24px' }}>
+          <div style={{ 
+            width: 80, height: 80, borderRadius: '50%', background: 'var(--success-bg)', 
+            color: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+            margin: '0 auto 24px', animation: 'scale-up 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' 
+          }}>
+            <Save size={40} />
+          </div>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-1)', marginBottom: 8 }}>¡Cliente registrado!</h2>
+          <p style={{ color: 'var(--text-3)', fontSize: 14 }}>La información se ha guardado correctamente.</p>
+          <style>{`
+            @keyframes scale-up {
+              from { transform: scale(0.5); opacity: 0; }
+              to { transform: scale(1); opacity: 1; }
+            }
+          `}</style>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -140,8 +175,17 @@ export default function FormularioCliente({ onCreated, onClose }: Props) {
           <div className="form-section-title">Datos principales</div>
           <div className="form-grid-2">
             <div className="form-group">
-              <label>Nombre completo *</label>
-              <input required value={form.nombre_completo} onChange={(e) => set('nombre_completo', e.target.value)} className="form-input" placeholder="Nombre y apellidos" />
+              <label>Nombre completo <span style={{ color: 'var(--danger)' }}>*</span></label>
+              <input 
+                required 
+                value={form.nombre_completo} 
+                onChange={(e) => set('nombre_completo', e.target.value)} 
+                className={`form-input ${submitted && !form.nombre_completo ? 'input-error' : ''}`} 
+                placeholder="Nombre y apellidos" 
+              />
+              {submitted && !form.nombre_completo && (
+                <div className="error-message">Este campo es obligatorio</div>
+              )}
             </div>
             <div className="form-group">
               <label>Teléfono celular</label>
@@ -163,7 +207,7 @@ export default function FormularioCliente({ onCreated, onClose }: Props) {
               )}
             </div>
             <div className="form-group">
-              <label>Email</label>
+              <label>Email <span style={{ color: 'var(--text-3)', fontSize: 10, fontWeight: 400 }}>(Opcional)</span></label>
               <div style={{ position: 'relative' }}>
                 <input 
                   type="email" 
@@ -183,7 +227,7 @@ export default function FormularioCliente({ onCreated, onClose }: Props) {
               )}
             </div>
             <div className="form-group">
-              <label>RFC</label>
+              <label>RFC <span style={{ color: 'var(--text-3)', fontSize: 10, fontWeight: 400 }}>(Opcional)</span></label>
               <input value={form.rfc} onChange={(e) => set('rfc', e.target.value)} className="form-input" placeholder="AAAA000000XXX" />
             </div>
           </div>
@@ -192,14 +236,14 @@ export default function FormularioCliente({ onCreated, onClose }: Props) {
           <div className="form-section-title mt-4">Información adicional</div>
           <div className="form-grid-2">
             <div className="form-group">
-              <label>Procedencia</label>
+              <label>Procedencia <span style={{ color: 'var(--text-3)', fontSize: 10, fontWeight: 400 }}>(Opcional)</span></label>
               <select value={form.procedencia} onChange={(e) => set('procedencia', e.target.value)} className="form-input">
                 <option value="">Seleccionar...</option>
                 {PROCEDENCIAS.map((p) => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
             <div className="form-group">
-              <label>Sexo</label>
+              <label>Sexo <span style={{ color: 'var(--text-3)', fontSize: 10, fontWeight: 400 }}>(Opcional)</span></label>
               <select value={form.sexo} onChange={(e) => set('sexo', e.target.value)} className="form-input">
                 <option value="">Seleccionar...</option>
                 <option value="Mujer">Mujer</option>
@@ -208,23 +252,23 @@ export default function FormularioCliente({ onCreated, onClose }: Props) {
               </select>
             </div>
             <div className="form-group">
-              <label>Fecha de nacimiento</label>
+              <label>Fecha de nacimiento <span style={{ color: 'var(--text-3)', fontSize: 10, fontWeight: 400 }}>(Opcional)</span></label>
               <input type="date" value={form.fecha_nacimiento} onChange={(e) => set('fecha_nacimiento', e.target.value)} className="form-input" />
             </div>
             <div className="form-group">
-              <label>País</label>
+              <label>País <span style={{ color: 'var(--text-3)', fontSize: 10, fontWeight: 400 }}>(Opcional)</span></label>
               <input value={form.pais} onChange={(e) => set('pais', e.target.value)} className="form-input" placeholder="México" />
             </div>
             <div className="form-group">
-              <label>Sucursal de origen</label>
+              <label>Sucursal de origen <span style={{ color: 'var(--text-3)', fontSize: 10, fontWeight: 400 }}>(Opcional)</span></label>
               <select value={form.sucursal_id} onChange={(e) => set('sucursal_id', e.target.value)} className="form-input">
                 <option value="">Ninguna / Global</option>
                 {sucursales.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
               </select>
             </div>
           </div>
-          <div className="form-group">
-            <label>Notas</label>
+          <div className="form-group mt-2">
+            <label>Notas <span style={{ color: 'var(--text-3)', fontSize: 10, fontWeight: 400 }}>(Opcional)</span></label>
             <textarea value={form.notas} onChange={(e) => set('notas', e.target.value)} className="form-input" rows={3} placeholder="Alergias, preferencias, etc." />
           </div>
 

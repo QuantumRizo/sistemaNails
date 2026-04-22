@@ -1,13 +1,12 @@
-import { useState } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ToastProvider } from './components/Common/Toast'
-import Sidebar, { type Section } from './components/Layout/Sidebar'
+import Sidebar from './components/Layout/Sidebar'
 import AgendaPage from './pages/AgendaPage'
 import ClientesPage from './pages/ClientesPage'
 import InventarioPage from './pages/InventarioPage'
 import AdministracionPage from './pages/AdministracionPage'
-import type { Cliente } from './types/database'
 import { AuthProvider, useAuthContext } from './context/AuthContext'
 import { SucursalProvider } from './context/SucursalContext'
 import LoginPage from './pages/LoginPage'
@@ -22,63 +21,82 @@ import CajaPage from './pages/CajaPage'
 import VentaDirectaPage from './pages/VentaDirectaPage'
 import MarketingPage from './pages/MarketingPage'
 import AsistenciaPage from './pages/AsistenciaPage'
+import type { Cliente } from './types/database'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 0 } },
 })
 
-// ─── ADMIN SHELL (The Legacy System) ─────────────────────────────
+// ─── ADMIN LAYOUT SHELL ──────────────────────────────────────────
+// Wraps all /admin/* routes — handles auth checks and renders Sidebar + Outlet
 function AdminShell() {
   const { session, loading, profile } = useAuthContext()
-  const [section, setSection] = useState<Section>('inicio')
-  const [pendingClient, setPendingClient] = useState<Cliente | null>(null)
+  const location = useLocation()
+  const navigate = useNavigate()
 
-  // 1. Aún no sabemos si hay sesión
+  // 1. Auth state still loading
   if (loading) return (
     <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
       <RefreshCw size={32} className="animate-spin" style={{ color: 'var(--accent)' }} />
     </div>
   )
 
-  // 2. Sin sesión → Login
+  // 2. No session → Login
   if (!session) return <Navigate to="/login" replace />
 
-  // 3. Sesión activa pero perfil todavía cargando (breve momento)
+  // 3. Session active but profile still loading
   if (profile === undefined) return (
     <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
       <RefreshCw size={32} className="animate-spin" style={{ color: 'var(--accent)' }} />
     </div>
   )
 
-  // Sección inicial según el rol (el perfil ya está garantizado aquí)
-  const isEmpleado = profile?.rol === 'empleado'
-  const effectiveSection = isEmpleado && section === 'inicio' ? 'agenda' : section
+  // 4. Redirect /admin exactly → default section by role
+  if (location.pathname === '/admin' || location.pathname === '/admin/') {
+    const defaultPath = profile?.rol === 'empleado' ? '/admin/agenda' : '/admin/inicio'
+    return <Navigate to={defaultPath} replace />
+  }
 
   return (
     <div className="app-shell">
-      <Sidebar current={effectiveSection} onChange={setSection} />
+      <Sidebar />
       <div className="main-area">
-        {effectiveSection === 'inicio'        && <InicioPage />}
-        
-        {effectiveSection === 'agenda' && (
-          <AgendaPage 
-            preselectedCliente={pendingClient} 
-            onClearPreselected={() => setPendingClient(null)} 
-          />
-        )}
-
-        {effectiveSection === 'asistencia'    && <AsistenciaPage />}
-        {effectiveSection === 'clientes'      && (
-          <ClientesPage onGoToAgenda={(c: Cliente) => { setPendingClient(c); setSection('agenda'); }} />
-        )}
-        {effectiveSection === 'inventario'    && <InventarioPage />}
-        {effectiveSection === 'caja'          && <CajaPage />}
-        {effectiveSection === 'venta-directa' && <VentaDirectaPage onFinish={() => setSection('inicio')} />}
-        {effectiveSection === 'marketing'     && <MarketingPage />}
-        {effectiveSection === 'analisis'      && <AnalisisPage />}
-        {effectiveSection === 'administracion' && <AdministracionPage />}
+        <Outlet />
       </div>
     </div>
+  )
+}
+
+// ClientesPage needs to navigate to Agenda with a pre-selected client.
+// We use router location.state for this.
+function ClientesWrapper() {
+  const navigate = useNavigate()
+  return (
+    <ClientesPage
+      onGoToAgenda={(c: Cliente) => navigate('/admin/agenda', { state: { preselectedCliente: c } })}
+    />
+  )
+}
+
+// AgendaPage reads preselectedCliente from location.state and clears it after use
+function AgendaWrapper() {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const preselectedCliente = (location.state as { preselectedCliente?: Cliente } | null)?.preselectedCliente ?? null
+
+  // Clear the state from history so refresh doesn't re-apply it
+  useEffect(() => {
+    if (preselectedCliente) {
+      navigate('/admin/agenda', { replace: true, state: {} })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  return (
+    <AgendaPage
+      preselectedCliente={preselectedCliente}
+      onClearPreselected={() => navigate('/admin/agenda', { replace: true, state: {} })}
+    />
   )
 }
 
@@ -102,10 +120,21 @@ export default function App() {
                 <Route path="/servicios/:slug" element={<ServiceFamilyPage />} />
                 <Route path="/reservar" element={<BookingPage />} />
                 <Route path="/login" element={<AuthWrapper />} />
-                
-                {/* Admin Routes */}
-                <Route path="/admin" element={<AdminShell />} />
-                
+
+                {/* Admin Routes — nested under AdminShell layout */}
+                <Route path="/admin" element={<AdminShell />}>
+                  <Route path="inicio"        element={<InicioPage />} />
+                  <Route path="agenda"        element={<AgendaWrapper />} />
+                  <Route path="asistencia"    element={<AsistenciaPage />} />
+                  <Route path="clientes"      element={<ClientesWrapper />} />
+                  <Route path="inventario"    element={<InventarioPage />} />
+                  <Route path="caja"          element={<CajaPage />} />
+                  <Route path="venta-directa" element={<VentaDirectaPage />} />
+                  <Route path="marketing"     element={<MarketingPage />} />
+                  <Route path="analisis"      element={<AnalisisPage />} />
+                  <Route path="administracion" element={<AdministracionPage />} />
+                </Route>
+
                 {/* Fallback */}
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>

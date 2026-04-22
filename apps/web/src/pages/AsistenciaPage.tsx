@@ -147,7 +147,23 @@ export default function AsistenciaPage() {
 
           <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
             {loading ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-3)' }}>Actualizando lista...</div>
+              <div style={{ padding: '0' }}>
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--border)', animation: 'skeleton-pulse 1.5s infinite ease-in-out' }}></div>
+                      <div>
+                        <div style={{ width: 100, height: 12, background: 'var(--border)', borderRadius: 4, marginBottom: 6, animation: 'skeleton-pulse 1.5s infinite ease-in-out' }}></div>
+                        <div style={{ width: 60, height: 8, background: 'var(--border)', borderRadius: 2, animation: 'skeleton-pulse 1.5s infinite ease-in-out' }}></div>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ width: 50, height: 12, background: 'var(--border)', borderRadius: 4, marginBottom: 6, marginLeft: 'auto', animation: 'skeleton-pulse 1.5s infinite ease-in-out' }}></div>
+                      <div style={{ width: 70, height: 8, background: 'var(--border)', borderRadius: 2, marginLeft: 'auto', animation: 'skeleton-pulse 1.5s infinite ease-in-out' }}></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : history.length === 0 ? (
               <div style={{ padding: '60px 40px', textAlign: 'center' }}>
                 <Search size={40} style={{ opacity: 0.1, marginBottom: '12px' }} />

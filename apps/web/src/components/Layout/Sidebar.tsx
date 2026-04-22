@@ -1,20 +1,18 @@
 import { Home, Calendar, Users, BarChart2, Package, Wallet, ShoppingCart, Megaphone, LogOut, Clock, Settings } from 'lucide-react'
 import { useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useSucursales } from '../../hooks/useSucursales'
 import { useAuthContext } from '../../context/AuthContext'
 import { useSucursalContext } from '../../context/SucursalContext'
 
+// Section type is still exported so other parts of the codebase can use it if needed
 export type Section = 'inicio' | 'agenda' | 'asistencia' | 'clientes' | 'inventario' | 'documentos' | 'profesionales' | 'validacion' | 'cobro' | 'analisis' | 'caja' | 'venta-directa' | 'marketing' | 'seguridad' | 'administracion'
-
-interface Props {
-  current: Section
-  onChange: (s: Section) => void
-}
 
 interface NavItem {
   id: Section
   label: string
   Icon: any
+  path: string
 }
 
 interface NavGroup {
@@ -26,31 +24,33 @@ const navGroups: NavGroup[] = [
   {
     name: 'Operaciones',
     items: [
-      { id: 'inicio',         label: 'Inicio',         Icon: Home         },
-      { id: 'agenda',         label: 'Agenda',         Icon: Calendar     },
-      { id: 'clientes',       label: 'Clientes',       Icon: Users        },
-      { id: 'asistencia',     label: 'Asistencia',     Icon: Clock        },
-      { id: 'venta-directa',  label: 'Venta Directa',  Icon: ShoppingCart },
-      { id: 'caja',           label: 'Caja',           Icon: Wallet       },
+      { id: 'inicio',         label: 'Inicio',         Icon: Home,         path: '/admin/inicio'         },
+      { id: 'agenda',         label: 'Agenda',         Icon: Calendar,     path: '/admin/agenda'         },
+      { id: 'clientes',       label: 'Clientes',       Icon: Users,        path: '/admin/clientes'       },
+      { id: 'asistencia',     label: 'Asistencia',     Icon: Clock,        path: '/admin/asistencia'     },
+      { id: 'venta-directa',  label: 'Venta Directa',  Icon: ShoppingCart, path: '/admin/venta-directa'  },
+      { id: 'caja',           label: 'Caja',           Icon: Wallet,       path: '/admin/caja'           },
     ]
   },
   {
     name: 'Análisis',
     items: [
-      { id: 'analisis',       label: 'Análisis',       Icon: BarChart2    },
+      { id: 'analisis',       label: 'Análisis',       Icon: BarChart2,    path: '/admin/analisis'       },
     ]
   },
   {
     name: 'Configuración',
     items: [
-      { id: 'administracion', label: 'Administración', Icon: Settings      },
-      { id: 'inventario',     label: 'Inventario',     Icon: Package       },
-      { id: 'marketing',      label: 'Marketing',      Icon: Megaphone     },
+      { id: 'administracion', label: 'Administración', Icon: Settings,     path: '/admin/administracion' },
+      { id: 'inventario',     label: 'Inventario',     Icon: Package,      path: '/admin/inventario'     },
+      { id: 'marketing',      label: 'Marketing',      Icon: Megaphone,    path: '/admin/marketing'      },
     ]
   }
 ]
 
-export default function Sidebar({ current, onChange }: Props) {
+export default function Sidebar() {
+  const navigate = useNavigate()
+  const location = useLocation()
   const { data: sucursales = [] } = useSucursales()
   const { signOut, user, profile } = useAuthContext()
   const { selectedSucursalId, setSelectedSucursalId } = useSucursalContext()
@@ -62,23 +62,26 @@ export default function Sidebar({ current, onChange }: Props) {
     }
   }, [sucursales, selectedSucursalId, setSelectedSucursalId])
 
+  // Derive active section from the current URL path
+  const currentPath = location.pathname
+
   return (
     <nav className="sidebar">
       <div style={{ padding: '24px 20px 10px', textAlign: 'center' }}>
-        <img 
-          src="/logo.jpeg" 
-          alt="MUYMUY Beauty Studio" 
-          style={{ 
-            maxWidth: '100%', 
-            height: 'auto', 
+        <img
+          src="/logo.jpeg"
+          alt="MUYMUY Beauty Studio"
+          style={{
+            maxWidth: '100%',
+            height: 'auto',
             borderRadius: '12px',
             marginBottom: '10px'
-          }} 
+          }}
         />
       </div>
       <div style={{ padding: '10px 16px 8px' }}>
         <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: '0.05em', marginBottom: 8 }}>SUCURSAL ACTIVA</div>
-        <select 
+        <select
           value={selectedSucursalId}
           onChange={(e) => setSelectedSucursalId(e.target.value)}
           style={{
@@ -121,23 +124,26 @@ export default function Sidebar({ current, onChange }: Props) {
               {groupIndex > 0 && (
                 <div style={{ margin: '0 8px 16px 8px', borderTop: '1px solid var(--border)', opacity: 0.5 }}></div>
               )}
-              
-              {allowedItems.map(({ id, label, Icon }) => (
-                <button
-                  key={id}
-                  onClick={() => onChange(id)}
-                  className={`nav-item ${current === id ? 'active' : ''}`}
-                >
-                  <Icon size={16} />
-                  {label}
-                </button>
-              ))}
+
+              {allowedItems.map(({ id, label, Icon, path }) => {
+                const isActive = currentPath === path || currentPath.startsWith(path + '/')
+                return (
+                  <button
+                    key={id}
+                    onClick={() => navigate(path)}
+                    className={`nav-item ${isActive ? 'active' : ''}`}
+                  >
+                    <Icon size={16} />
+                    {label}
+                  </button>
+                )
+              })}
             </div>
           )
         })}
-        
+
         <div style={{ margin: '16px 8px', borderTop: '1px solid var(--border)', opacity: 0.5 }}></div>
-        
+
         <button className="nav-item" onClick={signOut} style={{ color: 'var(--danger)' }}>
           <LogOut size={16} />
           Cerrar sesión

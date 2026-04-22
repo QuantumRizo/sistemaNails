@@ -16,11 +16,7 @@ import { useSucursalContext } from '../context/SucursalContext'
 import ConfirmDialog from '../components/Common/ConfirmDialog'
 import AjusteImporte from '../components/Common/AjusteImporte'
 
-interface Props {
-  onFinish?: () => void
-}
-
-export default function VentaDirectaPage({ onFinish: _onFinish }: Props) {
+export default function VentaDirectaPage() {
   const { data: sucursales = [] } = useSucursales()
   const crearTicket = useCrearTicketDirecto()
   const toast = useToast()

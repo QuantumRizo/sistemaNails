@@ -8,6 +8,7 @@ import { useSucursales } from '../../hooks/useSucursales'
 import { supabase } from '../../lib/supabase'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Empleada } from '../../types/database'
+import ConfirmDialog from '../Common/ConfirmDialog'
 
 interface EmpleadaForm {
   id?: string
@@ -33,6 +34,7 @@ export default function StaffTab() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingSucursal, setEditingSucursal] = useState<any | null>(null)
   const [saving, setSaving] = useState(false)
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', action: () => {} })
 
   const handleUpdateSucursal = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -102,10 +104,16 @@ export default function StaffTab() {
     qc.invalidateQueries({ queryKey: ['empleadas'] })
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('¿Eliminar a este profesional?')) return
-    await supabase.from('perfiles_empleadas').delete().eq('id', id)
-    qc.invalidateQueries({ queryKey: ['empleadas'] })
+  const handleDelete = (id: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Eliminar Profesional',
+      message: '¿Estás seguro de que deseas eliminar a este profesional? Esta acción no se puede deshacer.',
+      action: async () => {
+        await supabase.from('perfiles_empleadas').delete().eq('id', id)
+        qc.invalidateQueries({ queryKey: ['empleadas'] })
+      }
+    })
   }
 
   const grouped = sucursales.map(s => ({
@@ -163,12 +171,33 @@ export default function StaffTab() {
       )}
 
       {isLoading ? (
-        <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-3)' }}>Cargando información...</div>
+        <div style={{ padding: '0' }}>
+          {[...Array(2)].map((_, i) => (
+            <div key={i} className="stats-card" style={{ marginBottom: 32, padding: 0, overflow: 'hidden' }}>
+              <div style={{ padding: '32px 24px', borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--border)', animation: 'skeleton-pulse 1.5s infinite ease-in-out' }}></div>
+                  <div style={{ width: 180, height: 18, background: 'var(--border)', borderRadius: 4, animation: 'skeleton-pulse 1.5s infinite ease-in-out' }}></div>
+                </div>
+              </div>
+              <div style={{ padding: '32px 24px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
+                  {[...Array(4)].map((_, j) => (
+                    <div key={j} style={{ background: 'var(--surface)', padding: '12px 16px', borderRadius: 10, border: '1px solid var(--border)' }}>
+                      <div style={{ width: 60, height: 8, background: 'var(--border)', borderRadius: 2, marginBottom: 8, animation: 'skeleton-pulse 1.5s infinite ease-in-out' }}></div>
+                      <div style={{ width: 100, height: 12, background: 'var(--border)', borderRadius: 4, animation: 'skeleton-pulse 1.5s infinite ease-in-out' }}></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       ) : grouped.map(({ sucursal, empleadas: emps }) => (
         <div key={sucursal.id} className="stats-card" style={{ marginBottom: 32, padding: 0, overflow: 'hidden' }}>
           {/* Sucursal Header Info (THE BIG TABLE) */}
-          <div style={{ padding: '24px', borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+          <div style={{ padding: '32px 24px', borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--accent-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)' }}>
                   <Building2 size={24} />
@@ -181,7 +210,7 @@ export default function StaffTab() {
           </div>
 
           {/* Sub-table with Sucursal Details */}
-          <div style={{ padding: '0 24px 24px' }}>
+          <div style={{ padding: '32px 24px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
               <div 
                 onClick={() => setEditingSucursal(sucursal)}
@@ -380,6 +409,19 @@ export default function StaffTab() {
           color: white !important;
         }
       `}</style>
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        isDanger
+        confirmText="Eliminar"
+        onConfirm={() => {
+          confirmDialog.action()
+          setConfirmDialog({ ...confirmDialog, isOpen: false })
+        }}
+        onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+      />
     </div>
   )
 }
