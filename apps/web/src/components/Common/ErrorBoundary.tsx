@@ -77,7 +77,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               Recargar página
             </button>
 
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {import.meta.env.DEV && this.state.error && (
               <details style={{ marginTop: 24, textAlign: 'left' }}>
                 <summary style={{ fontSize: 11, color: '#86868b', cursor: 'pointer', marginBottom: 8 }}>
                   Detalles técnicos
