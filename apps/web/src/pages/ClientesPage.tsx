@@ -1,9 +1,11 @@
-import { useState } from 'react'
-import { Search, UserPlus, CalendarPlus } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Search, UserPlus, CalendarPlus, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useClientes } from '../hooks/useClientes'
 import FormularioCliente from '../components/Clientes/FormularioCliente'
 import ClienteDetalleSlideOver from '../components/Clientes/ClienteDetalleSlideOver'
 import type { Cliente } from '../types/database'
+
+const PAGE_SIZE = 20
 
 interface Props {
   onGoToAgenda?: (cliente: Cliente) => void
@@ -14,6 +16,13 @@ export default function ClientesPage({ onGoToAgenda }: Props) {
   const [showForm, setShowForm] = useState(false)
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null)
   const { data: clientes = [], isLoading } = useClientes(query)
+
+  // Pagination state — resets to page 1 when query changes
+  const [page, setPage] = useState(1)
+  useEffect(() => { setPage(1) }, [query])
+
+  const totalPages = Math.ceil(clientes.length / PAGE_SIZE)
+  const paginatedClientes = clientes.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   const initials = (name: string) =>
     name.split(' ').slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('')
@@ -91,76 +100,152 @@ export default function ClientesPage({ onGoToAgenda }: Props) {
           </div>
         )}
         {!isLoading && query.length >= 2 && clientes.length > 0 && (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Cliente</th>
-                <th>Nº Cliente</th>
-                <th>Teléfono</th>
-                <th>E-mail</th>
-                <th>Sucursal</th>
-                <th style={{ textAlign: 'right' }}>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {clientes.map((c) => (
-                <tr 
-                  key={c.id} 
-                  onClick={() => setSelectedCliente(c)}
-                  className="clickable-row"
-                >
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div className="cliente-avatar-sm">{initials(c.nombre_completo)}</div>
-                      <span style={{ fontWeight: 500 }}>{c.nombre_completo}</span>
-                    </div>
-                  </td>
-                  <td>#{c.num_cliente}</td>
-                  <td>{c.telefono_cel || '—'}</td>
-                  <td>{c.email || '—'}</td>
-                  <td>{c.sucursal?.nombre || '—'}</td>
-                  <td style={{ textAlign: 'right' }}>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onGoToAgenda?.(c) }}
-                        className="btn-secondary"
-                        style={{ padding: '6px 10px', fontSize: 11 }}
-                        title="Ir a la Agenda para buscar horario"
-                      >
-                        <CalendarPlus size={14} /> Agendar
-                      </button>
+          <>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Cliente</th>
+                  <th>Nº Cliente</th>
+                  <th>Teléfono</th>
+                  <th>E-mail</th>
+                  <th>Sucursal</th>
+                  <th style={{ textAlign: 'right' }}>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedClientes.map((c) => (
+                  <tr 
+                    key={c.id} 
+                    onClick={() => setSelectedCliente(c)}
+                    className="clickable-row"
+                  >
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div className="cliente-avatar-sm">{initials(c.nombre_completo)}</div>
+                        <span style={{ fontWeight: 500 }}>{c.nombre_completo}</span>
+                      </div>
                     </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+                    <td>#{c.num_cliente}</td>
+                    <td>{c.telefono_cel || '—'}</td>
+                    <td>{c.email || '—'}</td>
+                    <td>{c.sucursal?.nombre || '—'}</td>
+                    <td style={{ textAlign: 'right' }}>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onGoToAgenda?.(c) }}
+                          className="btn-secondary"
+                          style={{ padding: '6px 10px', fontSize: 11 }}
+                          title="Ir a la Agenda para buscar horario"
+                        >
+                          <CalendarPlus size={14} /> Agendar
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
 
-        {/* New client modal */}
-        {showForm && (
-          <FormularioCliente
-            onCreated={() => setShowForm(false)}
-            onClose={() => setShowForm(false)}
-          />
+            {/* Pagination Bar */}
+            {totalPages > 1 && (
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '12px 16px', borderTop: '1px solid var(--border)',
+                background: 'var(--surface-2)', fontSize: 13, color: 'var(--text-2)',
+              }}>
+                <span>
+                  Mostrando {((page - 1) * PAGE_SIZE) + 1}–{Math.min(page * PAGE_SIZE, clientes.length)} de {clientes.length} clientes
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: 32, height: 32, borderRadius: 8,
+                      border: '1px solid var(--border)', background: 'var(--surface)',
+                      cursor: page === 1 ? 'default' : 'pointer',
+                      opacity: page === 1 ? 0.4 : 1,
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+                    .reduce<(number | 'ellipsis')[]>((acc, p, idx, arr) => {
+                      if (idx > 0 && arr[idx - 1] !== p - 1) acc.push('ellipsis')
+                      acc.push(p)
+                      return acc
+                    }, [])
+                    .map((item, idx) =>
+                      item === 'ellipsis' ? (
+                        <span key={`e${idx}`} style={{ padding: '0 4px', color: 'var(--text-3)' }}>…</span>
+                      ) : (
+                        <button
+                          key={item}
+                          onClick={() => setPage(item as number)}
+                          style={{
+                            width: 32, height: 32, borderRadius: 8,
+                            border: page === item ? 'none' : '1px solid var(--border)',
+                            background: page === item ? 'var(--accent)' : 'var(--surface)',
+                            color: page === item ? '#fff' : 'var(--text-1)',
+                            fontWeight: page === item ? 700 : 500,
+                            fontSize: 13, cursor: 'pointer',
+                            transition: 'all 0.15s',
+                          }}
+                        >
+                          {item}
+                        </button>
+                      )
+                    )
+                  }
+
+                  <button
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: 32, height: 32, borderRadius: 8,
+                      border: '1px solid var(--border)', background: 'var(--surface)',
+                      cursor: page === totalPages ? 'default' : 'pointer',
+                      opacity: page === totalPages ? 0.4 : 1,
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
-
-        {/* Detail slide-over */}
-        {selectedCliente && (
-          <ClienteDetalleSlideOver
-            cliente={selectedCliente}
-            onClose={() => setSelectedCliente(null)}
-          />
-        )}
-
-        <style>{`
-          .clickable-row {
-            cursor: pointer;
-            transition: background-color 0.1s ease;
-          }
-          .clickable-row:hover {
-            background-color: var(--bg);
-          }
-        `}</style>
       </div>
-    )
-  }
+
+      {/* New client modal */}
+      {showForm && (
+        <FormularioCliente
+          onCreated={() => setShowForm(false)}
+          onClose={() => setShowForm(false)}
+        />
+      )}
+
+      {/* Detail slide-over */}
+      {selectedCliente && (
+        <ClienteDetalleSlideOver
+          cliente={selectedCliente}
+          onClose={() => setSelectedCliente(null)}
+        />
+      )}
+
+      <style>{`
+        .clickable-row {
+          cursor: pointer;
+          transition: background-color 0.1s ease;
+        }
+        .clickable-row:hover {
+          background-color: var(--bg);
+        }
+      `}</style>
+    </div>
+  )
+}

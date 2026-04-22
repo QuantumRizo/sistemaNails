@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ToastProvider } from './components/Common/Toast'
+import ErrorBoundary from './components/Common/ErrorBoundary'
 import Sidebar from './components/Layout/Sidebar'
 import AgendaPage from './pages/AgendaPage'
 import ClientesPage from './pages/ClientesPage'
@@ -108,39 +109,41 @@ function AuthWrapper() {
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider queryClient={queryClient}>
-        <SucursalProvider>
-          <ToastProvider>
-            <BrowserRouter>
-              <Routes>
-                {/* Public Routes */}
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/servicios/:slug" element={<ServiceFamilyPage />} />
-                <Route path="/reservar" element={<BookingPage />} />
-                <Route path="/login" element={<AuthWrapper />} />
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider queryClient={queryClient}>
+          <SucursalProvider>
+            <ToastProvider>
+              <BrowserRouter>
+                <Routes>
+                  {/* Public Routes */}
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/servicios/:slug" element={<ServiceFamilyPage />} />
+                  <Route path="/reservar" element={<BookingPage />} />
+                  <Route path="/login" element={<AuthWrapper />} />
 
-                {/* Admin Routes — nested under AdminShell layout */}
-                <Route path="/admin" element={<AdminShell />}>
-                  <Route path="inicio"        element={<InicioPage />} />
-                  <Route path="agenda"        element={<AgendaWrapper />} />
-                  <Route path="asistencia"    element={<AsistenciaPage />} />
-                  <Route path="clientes"      element={<ClientesWrapper />} />
-                  <Route path="inventario"    element={<InventarioPage />} />
-                  <Route path="caja"          element={<CajaPage />} />
-                  <Route path="venta-directa" element={<VentaDirectaPage />} />
-                  <Route path="marketing"     element={<MarketingPage />} />
-                  <Route path="analisis"      element={<AnalisisPage />} />
-                  <Route path="administracion" element={<AdministracionPage />} />
-                </Route>
+                  {/* Admin Routes — nested under AdminShell layout */}
+                  <Route path="/admin" element={<AdminShell />}>
+                    <Route path="inicio"        element={<InicioPage />} />
+                    <Route path="agenda"        element={<AgendaWrapper />} />
+                    <Route path="asistencia"    element={<AsistenciaPage />} />
+                    <Route path="clientes"      element={<ClientesWrapper />} />
+                    <Route path="inventario"    element={<InventarioPage />} />
+                    <Route path="caja"          element={<CajaPage />} />
+                    <Route path="venta-directa" element={<VentaDirectaPage />} />
+                    <Route path="marketing"     element={<MarketingPage />} />
+                    <Route path="analisis"      element={<AnalisisPage />} />
+                    <Route path="administracion" element={<AdministracionPage />} />
+                  </Route>
 
-                {/* Fallback */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </BrowserRouter>
-          </ToastProvider>
-        </SucursalProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+                  {/* Fallback */}
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </BrowserRouter>
+            </ToastProvider>
+          </SucursalProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   )
 }
