@@ -6,7 +6,7 @@ interface HeroSectionProps {
 
 export default function HeroSection({ isMobile }: HeroSectionProps) {
   return (
-    <section id="welcome" style={{
+    <section id="hero" style={{
       position: 'relative',
       height: isMobile ? 'auto' : '90vh',
       minHeight: isMobile ? '80vh' : '800px',

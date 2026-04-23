@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import LandingNavbar from '../components/Landing/LandingNavbar'
 import HeroSection from '../components/Landing/HeroSection'
 import QuienesSomosSection from '../components/Landing/QuienesSomosSection'
@@ -9,6 +10,7 @@ import ContactSection from '../components/Landing/ContactSection'
 
 export default function LandingPage() {
   const [isMobile, setIsMobile] = useState(false)
+  const location = useLocation()
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 900)
@@ -19,7 +21,7 @@ export default function LandingPage() {
 
   // Handle scroll to hash on mount and hash change
   useEffect(() => {
-    const hash = window.location.hash
+    const hash = location.hash
     if (hash) {
       const id = hash.replace('#', '')
       const element = document.getElementById(id)
@@ -29,7 +31,7 @@ export default function LandingPage() {
         }, 100)
       }
     }
-  }, [])
+  }, [location.hash])
 
   return (
     <div className="landing-editorial" style={{ background: '#fff', color: '#1d1d1f', fontFamily: '"Inter", -apple-system, sans-serif' }}>
@@ -49,6 +51,10 @@ export default function LandingPage() {
           font-weight: 800;
           letter-spacing: -2px;
           text-transform: uppercase;
+        }
+
+        .landing-editorial section {
+          scroll-margin-top: 80px;
         }
 
         @media (max-width: 768px) {
