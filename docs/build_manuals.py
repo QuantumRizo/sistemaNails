@@ -1,4 +1,6 @@
-import os
+from pathlib import Path
+
+DOCS_DIR = Path(__file__).resolve().parent
 
 def build_empleado_manual():
     content = """<div class="cover-page">
@@ -141,7 +143,7 @@ Desde esta sección puedes solicitar directamente tus días de vacaciones al ár
 ![Vacaciones Empleado](img/vacaciones_empleado.png)
 
 """
-    with open('/Users/david/Projects/muy_muy_beauty/docs/manual_empleados.md', 'w', encoding='utf-8') as f:
+    with open(DOCS_DIR / 'manual_empleados.md', 'w', encoding='utf-8') as f:
         f.write(content)
 
 def build_admin_manual():
@@ -284,7 +286,7 @@ Módulo para exportación y fidelización. Utiliza el filtro de clientes para ex
 ![Marketing](img/marketing_filtros.png)
 
 """
-    with open('/Users/david/Projects/muy_muy_beauty/docs/manual_administradores.md', 'w', encoding='utf-8') as f:
+    with open(DOCS_DIR / 'manual_administradores.md', 'w', encoding='utf-8') as f:
         f.write(content)
 
 if __name__ == '__main__':

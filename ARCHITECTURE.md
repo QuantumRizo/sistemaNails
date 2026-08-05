@@ -7,7 +7,7 @@
 ## Estructura actual del proyecto
 
 ```
-muy_muy_beauty/
+muy-muy-beauty/
 │
 ├── apps/
 │   ├── web/                    ← Dashboard admin + booking público (Vite + React 19 + TS)

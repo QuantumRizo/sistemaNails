@@ -12,7 +12,7 @@ El proyecto está estructurado como un **Monorepo** moderno que divide las respo
 El repositorio utiliza *npm workspaces* gestionados desde el `package.json` raíz, aunque la aplicación móvil se mantiene deliberadamente aislada para evitar conflictos de dependencias nativas.
 
 ```
-muy_muy_beauty/
+muy-muy-beauty/
 ├── apps/
 │   ├── web/        (Plataforma Administrativa y React SPA Vercel)
 │   └── mobile/     (Aplicación Móvil iOS/Android en Expo React Native)
@@ -69,8 +69,8 @@ Todo el ecosistema se apoya sobre una infraestructura ágil usando **Supabase**.
 En la terminal (macOS/Unix), asegúrate de clonar y correr la instalación garantizando un correcto enlace usando los lockfiles existentes:
 
 ```bash
-git clone https://github.com/QuantumRizo/muy_muy_beauty.git
-cd muy_muy_beauty
+git clone https://github.com/QuantumRizo/muy_muy_beauty.git muy-muy-beauty
+cd muy-muy-beauty
 
 # 1. Instalar depedencias web/globales garantizando estabilidad (En la ráz)
 npm install

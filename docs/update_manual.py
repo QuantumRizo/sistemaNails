@@ -1,7 +1,7 @@
-import sys
 import re
+from pathlib import Path
 
-path = '/Users/david/Projects/muy_muy_beauty/docs/manual_administradores.md'
+path = Path(__file__).resolve().parent / 'manual_administradores.md'
 with open(path, 'r', encoding='utf-8') as f:
     content = f.read()
 
