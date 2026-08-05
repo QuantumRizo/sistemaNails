@@ -69,7 +69,7 @@ Todo el ecosistema se apoya sobre una infraestructura ágil usando **Supabase**.
 En la terminal (macOS/Unix), asegúrate de clonar y correr la instalación garantizando un correcto enlace usando los lockfiles existentes:
 
 ```bash
-git clone https://github.com/QuantumRizo/muy_muy_beauty.git muy-muy-beauty
+git clone https://github.com/QuantumRizo/muy-muy-beauty.git
 cd muy-muy-beauty
 
 # 1. Instalar depedencias web/globales garantizando estabilidad (En la ráz)
