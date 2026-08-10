@@ -128,7 +128,7 @@ export function useComisionesHoja(mes: number, anio: number) {
         const comision = (totalSinIva * porcentaje) / 100
 
         // Tramo legible
-        let tramoStr = getTramoStr(totalConIva, tablaComisiones)
+        const tramoStr = getTramoStr(totalConIva, tablaComisiones)
 
         return {
           empleada_id: empId,

@@ -149,7 +149,7 @@ export default function AgendaPage({ preselectedCliente, onClearPreselected }: P
   const handleDeleteBloqueo = async (id: string) => {
     try {
       await eliminarBloqueo.mutateAsync(id)
-    } catch (err) {
+    } catch {
       toast('Error al eliminar bloqueo', 'error')
     }
   }

@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/mobile/package-lock.json
+      - name: Install web dependencies
+        run: npm ci
+      - name: Install mobile dependencies
+        run: npm ci --prefix apps/mobile --legacy-peer-deps
+      - name: Verify web and mobile
+        run: npm run check
+      - name: Run Expo Doctor
+        run: npm run doctor:mobile

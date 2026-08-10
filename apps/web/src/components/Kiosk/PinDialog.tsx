@@ -74,6 +74,9 @@ export default function PinDialog({ empleadaId, empleadaNombre, accion, onSucces
       {/* Card — stop propagation so clicking inside doesn't close */}
       <div
         onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pin-dialog-title"
         style={{
           background: '#ffffff',
           border: '1px solid #E5E7EB',
@@ -89,6 +92,7 @@ export default function PinDialog({ empleadaId, empleadaNombre, accion, onSucces
         {/* Close */}
         <button
           onClick={onCancel}
+          aria-label="Cerrar diálogo de PIN"
           style={{
             position: 'absolute', top: 16, right: 16,
             background: 'none', border: 'none',
@@ -112,7 +116,7 @@ export default function PinDialog({ empleadaId, empleadaNombre, accion, onSucces
           {empleadaNombre.charAt(0)}
         </div>
 
-        <h2 style={{ textAlign: 'center', margin: '0 0 4px', fontSize: 18, fontWeight: 700, color: '#111827' }}>
+        <h2 id="pin-dialog-title" style={{ textAlign: 'center', margin: '0 0 4px', fontSize: 18, fontWeight: 700, color: '#111827' }}>
           {empleadaNombre}
         </h2>
         <p style={{ textAlign: 'center', margin: '0 0 24px', fontSize: 13, color: '#4B5563' }}>
@@ -185,6 +189,7 @@ export default function PinDialog({ empleadaId, empleadaNombre, accion, onSucces
           {/* Backspace */}
           <button
             onClick={handleDelete}
+            aria-label="Borrar último dígito"
             disabled={verifying}
             style={{
               height: 56, borderRadius: 14,

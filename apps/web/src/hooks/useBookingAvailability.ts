@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { supabase } from '../lib/supabase'
-import { timeToSlots, slotsToTime } from '../utils/agenda'
-import type { Sucursal, Servicio, Empleada } from '../types/database'
+import type { Sucursal, Servicio } from '../types/database'
 
 // ─── HELPERS ──────────────────────────────────────────────────
 export function getSucursalHours(sucursal: Sucursal, date: Date): { start: number; end: number } {
@@ -30,73 +29,31 @@ export function useBookingAvailability(
   selectedDate: Date | null,
   selectedSucursal: Sucursal | null,
   selectedServicios: Servicio[],
-  perfiles: Empleada[],
   selectedProfesional: string | null
 ) {
   const [availableSlots, setAvailableSlots] = useState<string[]>([])
   const [fetchingSlots, setFetchingSlots] = useState(false)
+  const [availabilityError, setAvailabilityError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (selectedDate && selectedSucursal && selectedServicios.length > 0 && perfiles.length > 0) {
+    if (selectedDate && selectedSucursal && selectedServicios.length > 0) {
       async function checkAvailability() {
         setFetchingSlots(true)
-        const dateStr = format(selectedDate!, 'yyyy-MM-dd')
-        const totalDuration = selectedServicios.reduce((acc, s) => acc + s.duracion_slots, 0)
-
-        // Horario real de la sucursal para el día seleccionado
-        const { start: START_HOUR, end: END_HOUR } = getSucursalHours(selectedSucursal!, selectedDate!)
+        setAvailabilityError(null)
 
         try {
-          const [resCitas, resBloqueos] = await Promise.all([
-            supabase.from('citas')
-              .select('bloque_inicio, duracion_manual_slots, empleada_id')
-              .eq('fecha', dateStr)
-              .neq('estado', 'Cancelada'),
-            supabase.from('bloqueos_agenda')
-              .select('hora_inicio, hora_fin, empleada_id')
-              .eq('fecha', dateStr)
-          ])
-
-          const citas = resCitas.data || []
-          const bloqueos = resBloqueos.data || []
-
-          const slotsFound = new Set<string>()
-
-          const perfilesToCheck = selectedProfesional
-            ? perfiles.filter(p => p.id === selectedProfesional)
-            : perfiles
-
-          perfilesToCheck.forEach(emp => {
-            const occupied = new Array(96).fill(false)
-            citas.filter(c => c.empleada_id === emp.id).forEach(c => {
-              const start    = timeToSlots(c.bloque_inicio)
-              const duration = c.duracion_manual_slots || 4
-              for (let i = 0; i < duration; i++) if (start + i < 96) occupied[start + i] = true
-            })
-            bloqueos.filter(b => b.empleada_id === emp.id).forEach(b => {
-              const start = timeToSlots(b.hora_inicio)
-              const end   = timeToSlots(b.hora_fin)
-              for (let i = start; i < end; i++) if (i < 96) occupied[i] = true
-            })
-            for (let h = START_HOUR; h < END_HOUR; h++) {
-              for (let m = 0; m < 60; m += 15) {
-                const sIndex = h * 4 + m / 15
-                let canFit = true
-                for (let i = 0; i < totalDuration; i++) {
-                  if (sIndex + i >= 96 || occupied[sIndex + i]) {
-                    canFit = false
-                    break
-                  }
-                }
-                if (canFit) {
-                  slotsFound.add(slotsToTime(sIndex))
-                }
-              }
-            }
+          const { data, error } = await supabase.rpc('obtener_horarios_disponibles', {
+            p_sucursal_id: selectedSucursal!.id,
+            p_fecha: format(selectedDate!, 'yyyy-MM-dd'),
+            p_servicio_ids: selectedServicios.map(service => service.id),
+            p_empleada_id: selectedProfesional,
           })
-          setAvailableSlots(Array.from(slotsFound).sort())
+          if (error) throw error
+          setAvailableSlots(data ?? [])
         } catch (err) {
           console.error(err)
+          setAvailableSlots([])
+          setAvailabilityError('No pudimos consultar la disponibilidad. Intenta de nuevo.')
         } finally {
           setFetchingSlots(false)
         }
@@ -104,8 +61,9 @@ export function useBookingAvailability(
       checkAvailability()
     } else {
       setAvailableSlots([])
+      setAvailabilityError(null)
     }
-  }, [selectedDate, selectedSucursal, selectedServicios, perfiles, selectedProfesional])
+  }, [selectedDate, selectedSucursal, selectedServicios, selectedProfesional])
 
-  return { availableSlots, fetchingSlots }
+  return { availableSlots, fetchingSlots, availabilityError }
 }

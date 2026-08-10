@@ -68,6 +68,8 @@ export default function LandingNavbar() {
 
           <button
             onClick={() => setIsMenuOpen(true)}
+            aria-label="Abrir menú de navegación"
+            aria-expanded={isMenuOpen}
             className="mobile-only"
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: textColor, display: 'flex', alignItems: 'center' }}
           >
@@ -79,7 +81,7 @@ export default function LandingNavbar() {
       {/* ─── MOBILE MENU OVERLAY ───────────────────────── */}
       {isMenuOpen && (
         <div className="mobile-menu-overlay">
-          <button className="mobile-menu-close" onClick={() => setIsMenuOpen(false)}>
+          <button className="mobile-menu-close" onClick={() => setIsMenuOpen(false)} aria-label="Cerrar menú de navegación">
             <X size={24} />
           </button>
 

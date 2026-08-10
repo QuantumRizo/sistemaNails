@@ -32,17 +32,16 @@ export default function BookingPage() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 850)
   const toast = useToast()
 
-  const { sucursales, servicios, perfiles, loading } = useBookingData(selectedSucursal)
+  const { sucursales, servicios, perfiles, loading, error: bookingDataError, retry } = useBookingData(selectedSucursal)
   
-  const { availableSlots, fetchingSlots } = useBookingAvailability(
+  const { availableSlots, fetchingSlots, availabilityError } = useBookingAvailability(
     selectedDate,
     selectedSucursal,
     selectedServicios,
-    perfiles,
     selectedProfesional
   )
 
-  const { isExistingClient } = useClientVerification(clientInfo.telefono, setClientInfo)
+  const { isExistingClient } = useClientVerification(clientInfo.telefono)
 
   // ─── RESPONSIVE EFFECT ────────────────────────────────────────
   useEffect(() => {
@@ -104,6 +103,16 @@ export default function BookingPage() {
     </div>
   )
 
+  if (bookingDataError && sucursales.length === 0) return (
+    <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: 24, background: '#fbfbfb' }}>
+      <div style={{ maxWidth: 460, textAlign: 'center', background: '#fff', padding: 32, borderRadius: 20, border: '1px solid #efefef' }}>
+        <h1 style={{ fontSize: 24, marginBottom: 8 }}>No pudimos cargar la agenda</h1>
+        <p style={{ color: '#6e6e73', marginBottom: 24 }}>{bookingDataError}</p>
+        <button onClick={retry} style={{ border: 0, borderRadius: 14, padding: '12px 24px', background: '#1d1d1f', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>Reintentar</button>
+      </div>
+    </div>
+  )
+
   // ─── RENDER ───────────────────────────────────────────────────
   return (
     <div style={{ minHeight: '100vh', background: '#fbfbfb', color: '#1d1d1f', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>
@@ -116,6 +125,7 @@ export default function BookingPage() {
           {step !== 'sucursal' && step !== 'confirmado' && (
             <button
               onClick={() => { if (step === 'servicio') setStep('sucursal'); if (step === 'profesional') setStep('servicio'); if (step === 'fecha') setStep('profesional'); if (step === 'cliente') setStep('fecha'); }}
+              aria-label="Volver al paso anterior"
               style={{ background: '#f5f5f7', border: 'none', width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
             >
               <ArrowLeft size={18} />
@@ -308,6 +318,11 @@ export default function BookingPage() {
 
             {selectedDate && (
               <div className="animate-in">
+                {availabilityError && (
+                  <div role="alert" style={{ marginBottom: 16, padding: 14, borderRadius: 12, background: '#fff1f0', color: '#c62828' }}>
+                    {availabilityError}
+                  </div>
+                )}
                 <TimeSlotPicker
                   totalTime={totalTime}
                   availableSlots={availableSlots}
@@ -330,25 +345,26 @@ export default function BookingPage() {
             <p style={{ color: '#6e6e73', marginBottom: 32 }}>Agenda lista, solo nos faltan tus detalles.</p>
             {isExistingClient && (
               <div style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '12px 16px', borderRadius: 12, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600 }}>
-                <Sparkles size={18} /> ¡Hola de nuevo! Encontramos tu cuenta.
+                <Sparkles size={18} /> Reconocimos tu número. Confirma tus datos para continuar.
               </div>
             )}
             <div style={{ background: '#fff', borderRadius: 20, padding: 24, border: '1px solid #efefef', marginBottom: 32 }}>
               <div style={{ marginBottom: 20 }}>
-                <label style={{ fontSize: 14, fontWeight: 800, color: '#1d1d1f', marginBottom: 8, display: 'block' }}>WhatsApp / Teléfono *</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, borderBottom: '1px solid #efefef', paddingBottom: 12 }}><Clock size={18} color="#c7c7cc" /><input type="tel" placeholder="Ej: 5512345678" value={clientInfo.telefono} onChange={e => setClientInfo(prev => ({ ...prev, telefono: sanitizePhone(e.target.value) }))} style={{ border: 'none', width: '100%', fontSize: 16, outline: 'none', fontFamily: 'inherit' }} /></div>
+                <label htmlFor="booking-phone" style={{ fontSize: 14, fontWeight: 800, color: '#1d1d1f', marginBottom: 8, display: 'block' }}>WhatsApp / Teléfono *</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, borderBottom: '1px solid #efefef', paddingBottom: 12 }}><Clock size={18} color="#c7c7cc" /><input id="booking-phone" type="tel" autoComplete="tel" inputMode="numeric" placeholder="Ej: 5512345678" value={clientInfo.telefono} onChange={e => setClientInfo(prev => ({ ...prev, telefono: sanitizePhone(e.target.value) }))} style={{ border: 'none', width: '100%', fontSize: 16, outline: 'none', fontFamily: 'inherit' }} /></div>
               </div>
               <div style={{ marginBottom: 20 }}>
-                <label style={{ fontSize: 14, fontWeight: 800, color: '#1d1d1f', marginBottom: 8, display: 'block' }}>Nombre completo *</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, borderBottom: '1px solid #efefef', paddingBottom: 12 }}><User size={18} color="#c7c7cc" /><input type="text" placeholder="Escribe tu nombre" value={clientInfo.nombre} onChange={e => setClientInfo(prev => ({ ...prev, nombre: e.target.value }))} style={{ border: 'none', width: '100%', fontSize: 16, outline: 'none', fontFamily: 'inherit' }} disabled={isExistingClient} /></div>
+                <label htmlFor="booking-name" style={{ fontSize: 14, fontWeight: 800, color: '#1d1d1f', marginBottom: 8, display: 'block' }}>Nombre completo *</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, borderBottom: '1px solid #efefef', paddingBottom: 12 }}><User size={18} color="#c7c7cc" /><input id="booking-name" type="text" autoComplete="name" placeholder="Escribe tu nombre" value={clientInfo.nombre} onChange={e => setClientInfo(prev => ({ ...prev, nombre: e.target.value }))} style={{ border: 'none', width: '100%', fontSize: 16, outline: 'none', fontFamily: 'inherit' }} /></div>
               </div>
               <div>
-                <label style={{ fontSize: 14, fontWeight: 800, color: '#1d1d1f', marginBottom: 8, display: 'block' }}>Correo electrónico (Opcional)</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, borderBottom: '1px solid #efefef', paddingBottom: 12 }}><User size={18} color="#c7c7cc" /><input type="email" placeholder="Tu email" value={clientInfo.email} onChange={e => setClientInfo(prev => ({ ...prev, email: e.target.value }))} style={{ border: 'none', width: '100%', fontSize: 16, outline: 'none', fontFamily: 'inherit' }} disabled={isExistingClient} /></div>
+                <label htmlFor="booking-email" style={{ fontSize: 14, fontWeight: 800, color: '#1d1d1f', marginBottom: 8, display: 'block' }}>Correo electrónico (Opcional)</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, borderBottom: '1px solid #efefef', paddingBottom: 12 }}><User size={18} color="#c7c7cc" /><input id="booking-email" type="email" autoComplete="email" placeholder="Tu email" value={clientInfo.email} onChange={e => setClientInfo(prev => ({ ...prev, email: e.target.value }))} style={{ border: 'none', width: '100%', fontSize: 16, outline: 'none', fontFamily: 'inherit' }} /></div>
               </div>
               <div style={{ marginTop: 20 }}>
-                <label style={{ fontSize: 14, fontWeight: 800, color: '#1d1d1f', marginBottom: 8, display: 'block' }}>¿Deseas agregar una nota? (Opcional)</label>
+                <label htmlFor="booking-notes" style={{ fontSize: 14, fontWeight: 800, color: '#1d1d1f', marginBottom: 8, display: 'block' }}>¿Deseas agregar una nota? (Opcional)</label>
                 <textarea 
+                  id="booking-notes"
                   placeholder="Ej: Alergias, detalles del servicio, etc." 
                   value={clientInfo.notas_cliente} 
                   onChange={e => setClientInfo(prev => ({ ...prev, notas_cliente: e.target.value }))} 

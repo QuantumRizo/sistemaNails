@@ -255,7 +255,8 @@ export default function GestionCitaModal({ cita, onClose, onValidar }: Props) {
                     className={`btn-action-validate ${yaValidada ? 'validated' : ''}`}
                     onClick={() => {
                       if (yaValidada) return
-                      onValidar ? onValidar() : handleStatus('Finalizada')
+                      if (onValidar) onValidar()
+                      else handleStatus('Finalizada')
                     }}
                     disabled={saving || isLocked || yaValidada}
                     style={{

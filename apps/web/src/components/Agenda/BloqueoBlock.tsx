@@ -6,10 +6,11 @@ interface Props {
   height: number
 }
 
-export default function BloqueoBlock({ bloqueo: _, top, height }: Props) {
+export default function BloqueoBlock({ bloqueo, top, height }: Props) {
   return (
     <div
       className="bloqueo-block"
+      aria-label={bloqueo.motivo || 'Horario bloqueado'}
       style={{
         top,
         height: Math.max(height, 16),

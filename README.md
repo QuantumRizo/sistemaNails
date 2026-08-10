@@ -39,7 +39,7 @@ Sistema integral diseñado para la gestión y control del estudio.
 ## 📱 Módulo Móvil (`apps/mobile`)
 
 App diseñada para acercar el ecosistema de servicios a los clientes. Permite ver el catálogo, agendar citas en tiempo real ligadas a las sucursales, ver el historial y gestionar su perfil.
-- **Framework**: React Native 0.81.4 bajo Expo SDK 54.0.0.
+- **Framework**: React Native 0.81.5 bajo Expo SDK 54.
 - **Frontend**: React 19.1 + TypeScript.
 - **Estado**: Zustand + Supabase en local con persistencia.
 - **Manejo de Rutas**: `expo-router` (requiere dependencia `expo-linking` forzada en SDK 54).
@@ -62,7 +62,8 @@ Todo el ecosistema se apoya sobre una infraestructura ágil usando **Supabase**.
 ## ⚙️ Instalación y Scripts Comunes
 
 ### Requisitos Previos
-- Node.js (v24/v25 recomendado).
+- Node.js 24 (la versión exacta de trabajo está declarada en `.nvmrc`).
+- npm 11 y Docker Desktop para el entorno local de Supabase.
 - Cuenta de Supabase válida con sus llaves.
 
 ### Configuración del Entorno Virtual Local
@@ -72,17 +73,35 @@ En la terminal (macOS/Unix), asegúrate de clonar y correr la instalación garan
 git clone https://github.com/QuantumRizo/muy-muy-beauty.git
 cd muy-muy-beauty
 
-# 1. Instalar depedencias web/globales garantizando estabilidad (En la ráz)
-npm install
+# 1. Instalar dependencias web/globales desde la raíz
+npm ci
 
 # 2. Levantar el proyecto Web
 npm run web
 
 # 3. Instalar y Levantar la App Móvil (Desde su propia carpeta)
 cd apps/mobile
-npm install
+npm ci
 npx expo start --ios
 ```
+
+### Verificación antes de subir cambios
+
+```bash
+# Desde la raíz: lint web, tests, build y typecheck móvil
+npm run check
+
+# Salud del proyecto Expo
+npm run doctor:mobile
+
+# Esquema local completo (requiere Docker)
+npx supabase db reset
+npx supabase db lint --local
+```
+
+La carpeta nativa `apps/mobile/ios` se conserva en Git. Cuando se cambien campos
+nativos de `app.json` o plugins de Expo, se debe ejecutar `npx expo prebuild` y
+revisar los cambios nativos antes de compilar.
 
 ### Variables de Entorno (`.env`)
 Crear un entorno `.env` local en la raíz dependiendo del módulo que se vaya a invocar:

@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
-export function useClientVerification(telefono: string, setClientInfo: any) {
+export function useClientVerification(telefono: string) {
   const [isExistingClient, setIsExistingClient] = useState(false)
 
   useEffect(() => {
     if (telefono.length === 10) {
       supabase.rpc('verificar_cliente_por_telefono', { p_telefono: telefono })
-        .then(({ data }) => {
+        .then(({ data, error }) => {
+          if (error) {
+            setIsExistingClient(false)
+            return
+          }
           if (data?.existe) {
-            setClientInfo((prev: any) => ({ ...prev, nombre: data.nombre_completo, email: data.email || prev.email }))
             setIsExistingClient(true)
           } else {
             setIsExistingClient(false)
@@ -18,7 +21,7 @@ export function useClientVerification(telefono: string, setClientInfo: any) {
     } else {
       setIsExistingClient(false)
     }
-  }, [telefono, setClientInfo])
+  }, [telefono])
 
   return { isExistingClient }
 }

@@ -10,6 +10,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+coverage
 *.local
 
 # Environment variables — NEVER commit these
@@ -35,6 +36,9 @@ dist-ssr
 supabase/.temp/
 supabase/.branches/
 supabase/.project-id
+
+# Expo local state
+apps/mobile/.expo/
 
 # Development scripts that should not be in version control
 apps/web/check_db.ts

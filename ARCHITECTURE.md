@@ -1,6 +1,6 @@
 # 🏗️ MUYMUY Beauty — Arquitectura del Monorepo
 
-> **Última actualización:** Junio 2026
+> **Última actualización:** Agosto 2026
 
 ---
 
@@ -31,9 +31,9 @@ muy-muy-beauty/
 ├── supabase/
 │   ├── functions/
 │   │   └── meta-insights/      ← Edge Function: proxy seguro para Meta Graph API
-│   └── migrations/             ← 33 migraciones SQL en orden cronológico
+│   └── migrations/             ← Migraciones SQL en orden cronológico
 │
-├── pnpm-workspace.yaml         ← Define los workspaces
+├── package.json                ← Workspace npm de la app web
 └── ARCHITECTURE.md             ← Este archivo
 ```
 
@@ -43,7 +43,10 @@ muy-muy-beauty/
 
 ```bash
 # 1. Clonar e instalar dependencias
-git clone <repo> && pnpm install
+git clone <repo>
+cd muy-muy-beauty
+npm ci
+npm ci --prefix apps/mobile
 
 # 2. Configurar variables de entorno
 cp apps/web/.env.example apps/web/.env.local      # → editar con tus valores
@@ -71,7 +74,9 @@ Cada app tiene **su propio cliente Supabase** con sus propias env vars:
 | Web (Vite) | `apps/web/src/lib/supabase.ts` | `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` |
 | Mobile (Expo) | `apps/mobile/lib/supabase.ts` | `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` |
 
-Ambas apps apuntan al **mismo proyecto Supabase**. En desarrollo local apuntan a `http://127.0.0.1:54321`.
+Ambas apps apuntan al **mismo proyecto Supabase**. Usa la URL y la clave que imprime
+`npx supabase status`; los puertos están definidos en `supabase/config.toml` y no se
+deben asumir en el código.
 
 ---
 
@@ -103,19 +108,22 @@ El flujo de booking funciona de forma **anónima** (`anon`) sin cuenta de usuari
 
 | RPC | Rol | Descripción |
 |---|---|---|
-| `verificar_cliente_por_telefono(p_telefono)` | `anon` | Solo devuelve nombre + email si existe, nunca el ID ni sucursal |
-| `crear_reserva_publica(...)` | `anon` | Crea cliente + cita + cita_servicios server-side con validaciones completas |
+| `verificar_cliente_por_telefono(p_telefono)` | `anon` | Solo devuelve si el teléfono ya existe; no expone PII ni IDs |
+| `obtener_horarios_disponibles(...)` | `anon` | Calcula disponibilidad sin exponer citas, bloqueos ni datos de clientas |
+| `crear_reserva_publica(...)` | `anon` | Crea cliente + cita + servicios de forma atómica y evita dobles reservas |
 
 **⚠️ IMPORTANTE:** El rol `anon` **NO tiene** acceso directo INSERT/UPDATE en `clientes`, `citas` ni `cita_servicios`. Toda escritura va por RPC. Las políticas RLS de acceso directo para `anon` en esas tablas fueron eliminadas en `20260609010000_secure_booking_rpc.sql`.
 
 ### Validaciones en `crear_reserva_publica`
 
-La función RPC (migración `20260612200000_security_service_validation.sql`) valida:
-1. Teléfono de 10 dígitos mínimo
-2. Nombre no vacío  
+La función RPC endurecida valida:
+1. Teléfono mexicano de 10 dígitos
+2. Nombre no vacío y límites de tamaño
 3. Máximo 5 servicios por reserva (anti-abuse)
 4. Todos los servicios deben existir y estar **activos**
 5. La empleada (si se especifica) debe pertenecer a **la misma sucursal**
+6. Fecha futura, bloques de 15 minutos y horario completo dentro de apertura
+7. Disponibilidad real bajo un bloqueo transaccional por sucursal y fecha
 
 ---
 
@@ -130,7 +138,7 @@ La función RPC (migración `20260612200000_security_service_validation.sql`) va
 | Routing web | React Router v7 |
 | Charts | Recharts |
 | Icons | Lucide React |
-| Gestión monorepo | pnpm workspaces |
+| Gestión monorepo | npm workspace para web; Expo aislado con lockfile propio |
 | Deploy web | Vercel (Root Directory: `apps/web`) |
 | Deploy mobile | Expo EAS Build |
 
@@ -138,9 +146,9 @@ La función RPC (migración `20260612200000_security_service_validation.sql`) va
 
 ## Decisiones de arquitectura
 
-### ¿Por qué pnpm workspaces?
-- Más eficiente en disco (hard links en node_modules)
-- Mejor soporte para monorepos en el ecosistema React Native/Expo
+### ¿Por qué el móvil está fuera del workspace raíz?
+- React web y React Native requieren árboles de dependencias distintos
+- Expo conserva su propio `package-lock.json` para que npm no mezcle peers nativos
 
 ### ¿Por qué no un paquete `@muymuy/types` compartido?
 - Con solo 2 apps activas el overhead de configuración no vale la pena

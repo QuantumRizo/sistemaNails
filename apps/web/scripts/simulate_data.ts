@@ -22,7 +22,8 @@ const generateClients = async () => {
     datos_extra: { notas: 'Generado por script de simulacion' }
   }));
 
-  let { data: insertedClients, error } = await supabase.from('clientes').insert(clients).select('id');
+  const { data, error } = await supabase.from('clientes').insert(clients).select('id');
+  let insertedClients = data;
   if (error) {
     console.log('Clientes ya existen, recuperando...');
     const res = await supabase.from('clientes').select('id').like('email', 'cliente_sim_%');
@@ -134,6 +135,10 @@ const simulateAppointments = async (clients: any[]) => {
           metodo_pago: 'Efectivo',
           estado: 'Completado'
         }).select('id').single();
+
+        if (ticketError) {
+          console.error('No se pudo generar el ticket simulado:', ticketError.message);
+        }
 
         if (ticket) {
           // Add to pagos

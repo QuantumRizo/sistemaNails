@@ -11,7 +11,7 @@ interface KioskModalProps {
   onClose: () => void
 }
 
-type KioskStep = 'SELECT_EMPLOYEE' | 'ENTER_PIN' | 'PORTAL' | 'CREATE_PIN' | 'CONFIRM_PIN'
+type KioskStep = 'SELECT_EMPLOYEE' | 'ENTER_PIN' | 'PORTAL'
 
 export default function KioskModal({ isOpen, onClose }: KioskModalProps) {
   const { selectedSucursalId } = useSucursalContext()
@@ -22,7 +22,6 @@ export default function KioskModal({ isOpen, onClose }: KioskModalProps) {
   
   const [verifying, setVerifying] = useState(false)
   const [pinError, setPinError] = useState<string | null>(null)
-  const [newPin, setNewPin] = useState<string | null>(null)
 
   // Reset state when modal opens/closes
   useEffect(() => {
@@ -50,8 +49,8 @@ export default function KioskModal({ isOpen, onClose }: KioskModalProps) {
       if (data === true) {
         setStep('ENTER_PIN')
       } else {
-        setStep('CREATE_PIN')
-        setNewPin(null)
+        setPinError('Esta empleada todavía no tiene PIN. Un administrador debe configurarlo en Accesos.')
+        setStep('SELECT_EMPLOYEE')
       }
     } catch (err) {
       console.error(err)
@@ -89,44 +88,6 @@ export default function KioskModal({ isOpen, onClose }: KioskModalProps) {
     }
   }
 
-  const handleCreatePin = (pin: string) => {
-    setNewPin(pin)
-    setStep('CONFIRM_PIN')
-    setPinError(null)
-  }
-
-  const handleConfirmPin = async (pin: string) => {
-    if (pin !== newPin) {
-      setPinError('Los PINs no coinciden. Intenta de nuevo.')
-      setStep('CREATE_PIN')
-      setNewPin(null)
-      return
-    }
-
-    if (!selectedEmpleada) return
-
-    setVerifying(true)
-    setPinError(null)
-
-    try {
-      const { error } = await supabase.rpc('asignar_pin_empleada', {
-        p_empleada_id: selectedEmpleada.id,
-        p_pin: pin
-      })
-
-      if (error) throw error
-
-      setStep('PORTAL')
-    } catch (err) {
-      console.error(err)
-      setPinError('Error al guardar el PIN. Intenta de nuevo.')
-      setStep('CREATE_PIN')
-      setNewPin(null)
-    } finally {
-      setVerifying(false)
-    }
-  }
-
   const handleBackToSelect = () => {
     setStep('SELECT_EMPLOYEE')
     setSelectedEmpleada(null)
@@ -134,7 +95,7 @@ export default function KioskModal({ isOpen, onClose }: KioskModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[var(--bg)]/95 backdrop-blur-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex flex-col bg-[var(--bg)]/95 backdrop-blur-md overflow-hidden animate-in fade-in zoom-in-95 duration-200" role="dialog" aria-modal="true" aria-labelledby="kiosk-title">
       
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b border-[var(--border)] bg-[var(--surface-1)]">
@@ -143,12 +104,13 @@ export default function KioskModal({ isOpen, onClose }: KioskModalProps) {
             <Users size={24} />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-[var(--text-1)] m-0">Portal de Personal</h1>
+            <h1 id="kiosk-title" className="text-xl font-bold text-[var(--text-1)] m-0">Portal de Personal</h1>
             <p className="text-xs text-[var(--text-3)] m-0">Modo Quiosco</p>
           </div>
         </div>
         <button 
           onClick={onClose}
+          aria-label="Cerrar portal de personal"
           className="p-3 text-[var(--text-2)] hover:text-[var(--danger)] hover:bg-[var(--danger)]/10 rounded-xl transition-colors"
         >
           <X size={24} />
@@ -205,47 +167,6 @@ export default function KioskModal({ isOpen, onClose }: KioskModalProps) {
               onCancel={handleBackToSelect}
               error={pinError}
               isLoading={verifying}
-            />
-          </div>
-        )}
-
-        {step === 'CREATE_PIN' && selectedEmpleada && (
-          <div className="w-full animate-in slide-in-from-bottom-8 fade-in duration-300">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 rounded-full bg-[var(--accent)] text-white flex items-center justify-center text-2xl font-bold mx-auto mb-3 shadow-lg shadow-[var(--accent)]/20">
-                {selectedEmpleada.nombre.charAt(0)}
-              </div>
-              <h2 className="text-xl font-bold text-[var(--text-1)]">¡Hola, {selectedEmpleada.nombre}!</h2>
-              <p className="text-sm text-[var(--text-3)] mt-1">Parece que es tu primera vez aquí. Por favor, crea un PIN.</p>
-            </div>
-            
-            <PinPad 
-              onPinComplete={handleCreatePin}
-              onCancel={handleBackToSelect}
-              error={pinError}
-              isLoading={verifying}
-              title="Crea tu PIN"
-              subtitle="Ingresa 4 dígitos"
-            />
-          </div>
-        )}
-
-        {step === 'CONFIRM_PIN' && selectedEmpleada && (
-          <div className="w-full animate-in slide-in-from-right-8 fade-in duration-300">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 rounded-full bg-[var(--accent)] text-white flex items-center justify-center text-2xl font-bold mx-auto mb-3 shadow-lg shadow-[var(--accent)]/20">
-                {selectedEmpleada.nombre.charAt(0)}
-              </div>
-              <h2 className="text-xl font-bold text-[var(--text-1)]">Confirma tu PIN</h2>
-            </div>
-            
-            <PinPad 
-              onPinComplete={handleConfirmPin}
-              onCancel={() => { setStep('CREATE_PIN'); setNewPin(null); setPinError(null) }}
-              error={pinError}
-              isLoading={verifying}
-              title="Vuelve a ingresar tu PIN"
-              subtitle="Para asegurarnos de que no hay errores"
             />
           </div>
         )}

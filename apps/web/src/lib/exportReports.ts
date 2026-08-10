@@ -62,7 +62,7 @@ export async function downloadComisionesCSV(fechaInicio: string, fechaFin: strin
   // 4. Build CSV
   const headers = ['Familia', 'Tratamiento', ...vendedorasArray]
   
-  let csvRows = rowsArray.map(r => {
+  const csvRows = rowsArray.map(r => {
     const rowT = [r.familia, r.tratamiento]
     vendedorasArray.forEach(v => {
       rowT.push((r[v] || 0).toString())
@@ -127,7 +127,7 @@ export async function downloadResumenVentasCSV(fechaInicio: string, fechaFin: st
 
   const rows = Object.entries(stats)
     .filter(([sId]) => sucursalesIds.includes(sId))
-    .map(([_, r]) => r)
+    .map(([, r]) => r)
   // Re-filter if sucursalesIds length > 0
   
   const headers = ['Centro', 'Ventas ($)', 'No. de Tickets', 'Ticket Medio ($)', 'Clientes Nuevos']

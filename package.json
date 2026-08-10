@@ -1,14 +1,20 @@
 {
-  "name": "muymuy-beauty-monorepo",
+  "name": "muy-muy-beauty",
   "private": true,
+  "packageManager": "npm@11.16.0",
+  "engines": {
+    "node": ">=24 <25"
+  },
   "workspaces": [
-    "apps/*"
+    "apps/web"
   ],
   "scripts": {
     "dev": "npm run dev --workspace=apps/web",
     "build": "npm run build --workspace=apps/web",
     "web": "npm run dev --workspace=apps/web",
-    "docs:build": "node docs/build.js"
+    "docs:build": "node docs/build.js",
+    "check": "npm run lint --workspace=apps/web && npm run test --workspace=apps/web && npm run build --workspace=apps/web && npm --prefix apps/mobile run typecheck",
+    "doctor:mobile": "npm --prefix apps/mobile run doctor"
   },
   "devDependencies": {
     "md-to-pdf": "^5.2.5"

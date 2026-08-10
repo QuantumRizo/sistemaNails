@@ -1303,6 +1303,15 @@ export type Database = {
         }[]
       }
       obtener_perfil_cliente: { Args: { p_cliente_id: string }; Returns: Json }
+      obtener_horarios_disponibles: {
+        Args: {
+          p_empleada_id?: string | null
+          p_fecha: string
+          p_servicio_ids: string[]
+          p_sucursal_id: string
+        }
+        Returns: string[]
+      }
       rechazar_vacaciones: {
         Args: { p_admin_id: string; p_notas?: string; p_solicitud_id: string }
         Returns: undefined
@@ -1513,4 +1522,3 @@ export const Constants = {
     },
   },
 } as const
-

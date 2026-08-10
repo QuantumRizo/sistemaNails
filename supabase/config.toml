@@ -1,11 +1,69 @@
+# Local Supabase configuration. This project owns the 54350-54359 port block.
+project_id = "muy-muy-beauty"
+
+[api]
+enabled = true
+port = 54351
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54352
+shadow_port = 54350
+major_version = 17
+
+[db.pooler]
+enabled = false
+port = 54359
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 100
+
+[db.migrations]
+enabled = true
+schema_paths = []
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[realtime]
+enabled = true
+
+[studio]
+enabled = true
+port = 54353
+
+[local_smtp]
+enabled = true
+port = 54354
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:5173"
+additional_redirect_urls = ["http://127.0.0.1:5173", "http://localhost:5173"]
+jwt_expiry = 3600
+enable_signup = true
+
+[edge_runtime]
+enabled = true
+policy = "per_worker"
+inspector_port = 54358
+deno_version = 2
+
+[analytics]
+# Disabled locally to reduce Docker memory and disk usage.
+enabled = false
+port = 54357
 
 [functions.meta-insights]
 enabled = true
+# This endpoint is intentionally public; its implementation must validate inputs and rate-limit.
 verify_jwt = false
 import_map = "./functions/meta-insights/deno.json"
-# Uncomment to specify a custom file path to the entrypoint.
-# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
 entrypoint = "./functions/meta-insights/index.ts"
-# Specifies static files to be bundled with the function. Supports glob patterns.
-# For example, if you want to serve static HTML pages in your function:
-# static_files = [ "./functions/meta-insights/*.html" ]

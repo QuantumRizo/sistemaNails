@@ -54,7 +54,7 @@ export default function ContactSection() {
               Redefiniendo los estándares de belleza y bienestar. Visítanos en cualquiera de nuestras sucursales en Polanco.
             </p>
             <div style={{ display: 'flex', gap: 24, marginBottom: 32 }}>
-              <a href="https://instagram.com" style={{
+              <a href="https://instagram.com" aria-label="MUYMUY en Instagram" style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: 'rgba(255,255,255,0.05)', borderRadius: '12px', width: '48px', height: '48px'
               }}>

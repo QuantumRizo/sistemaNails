@@ -29,6 +29,7 @@ export function BookingCalendar({ currentMonth, selectedDate, onSelectDate, onCh
         <div style={{ display: 'flex', gap: 8 }}>
           <button
             onClick={() => onChangeMonth(subMonths(currentMonth, 1))}
+            aria-label="Mes anterior"
             disabled={isBefore(startOfMonth(subMonths(currentMonth, 0)), startOfMonth(ahoraMX()))}
             style={{
               background: '#f5f5f7', border: 'none', width: 36, height: 36,
@@ -41,6 +42,7 @@ export function BookingCalendar({ currentMonth, selectedDate, onSelectDate, onCh
           </button>
           <button
             onClick={() => onChangeMonth(addMonths(currentMonth, 1))}
+            aria-label="Mes siguiente"
             style={{ background: '#f5f5f7', border: 'none', width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
           >
             <ChevronRight size={18} />
@@ -66,6 +68,8 @@ export function BookingCalendar({ currentMonth, selectedDate, onSelectDate, onCh
             <button
               key={i}
               disabled={isPast}
+              aria-label={format(day, "d 'de' MMMM 'de' yyyy", { locale: es })}
+              aria-pressed={Boolean(isSelected)}
               onClick={() => onSelectDate(day)}
               style={{
                 aspectRatio: '1/1', display: 'flex', flexDirection: 'column',

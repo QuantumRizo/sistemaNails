@@ -43,7 +43,7 @@ export default function IdentificacionScreen() {
       const { data: existing, error } = await supabase.rpc('verificar_cliente_por_telefono', { p_telefono: tel })
       if (error) throw error
 
-      if (existing?.existe && existing.id) {
+      if (existing?.existe) {
         setIsExisting(true)
         await enviarOtp(tel)
       } else {

@@ -1,35 +1,43 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ToastProvider } from './components/Common/Toast'
 import ErrorBoundary from './components/Common/ErrorBoundary'
 import Sidebar from './components/Layout/Sidebar'
-import AgendaPage from './pages/AgendaPage'
-import ClientesPage from './pages/ClientesPage'
-import InventarioPage from './pages/InventarioPage'
-import AdministracionPage from './pages/AdministracionPage'
 import { AuthProvider, useAuthContext } from './context/AuthContext'
 import { SucursalProvider } from './context/SucursalContext'
-import LoginPage from './pages/LoginPage'
-import LandingPage from './pages/LandingPage'
-import BookingPage from './pages/BookingPage'
-import ServiceFamilyPage from './pages/ServiceFamilyPage'
 import { RefreshCw } from 'lucide-react'
-
-import InicioPage from "./pages/InicioPage"
-import AnalisisPage from './pages/AnalisisPage'
-import CajaPage from './pages/CajaPage'
-import VentaDirectaPage from './pages/VentaDirectaPage'
-import MarketingPage from './pages/MarketingPage'
-import AsistenciaPage from './pages/AsistenciaPage'
-import VacacionesPage from './pages/VacacionesPage'
-import AccesosPage from './pages/AccesosPage'
 import SucursalGuard from './components/Common/SucursalGuard'
 import type { Cliente } from './types/database'
+
+const AgendaPage = lazy(() => import('./pages/AgendaPage'))
+const ClientesPage = lazy(() => import('./pages/ClientesPage'))
+const InventarioPage = lazy(() => import('./pages/InventarioPage'))
+const AdministracionPage = lazy(() => import('./pages/AdministracionPage'))
+const LoginPage = lazy(() => import('./pages/LoginPage'))
+const LandingPage = lazy(() => import('./pages/LandingPage'))
+const BookingPage = lazy(() => import('./pages/BookingPage'))
+const ServiceFamilyPage = lazy(() => import('./pages/ServiceFamilyPage'))
+const InicioPage = lazy(() => import('./pages/InicioPage'))
+const AnalisisPage = lazy(() => import('./pages/AnalisisPage'))
+const CajaPage = lazy(() => import('./pages/CajaPage'))
+const VentaDirectaPage = lazy(() => import('./pages/VentaDirectaPage'))
+const MarketingPage = lazy(() => import('./pages/MarketingPage'))
+const AsistenciaPage = lazy(() => import('./pages/AsistenciaPage'))
+const VacacionesPage = lazy(() => import('./pages/VacacionesPage'))
+const AccesosPage = lazy(() => import('./pages/AccesosPage'))
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 60_000 } }, // 1 min — evita refetch innecesario al navegar entre páginas
 })
+
+function AppLoading() {
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
+      <RefreshCw size={32} className="animate-spin" style={{ color: 'var(--accent)' }} aria-label="Cargando" />
+    </div>
+  )
+}
 
 // ─── ADMIN LAYOUT SHELL ──────────────────────────────────────────
 // Wraps all /admin/* routes — handles auth checks and renders Sidebar + Outlet
@@ -118,7 +126,8 @@ export default function App() {
           <SucursalProvider>
             <ToastProvider>
               <BrowserRouter>
-                <Routes>
+                <Suspense fallback={<AppLoading />}>
+                  <Routes>
                   {/* Public Routes */}
                   <Route path="/" element={<LandingPage />} />
                   <Route path="/servicios/:slug" element={<ServiceFamilyPage />} />
@@ -143,7 +152,8 @@ export default function App() {
 
                   {/* Fallback */}
                   <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
+                  </Routes>
+                </Suspense>
               </BrowserRouter>
             </ToastProvider>
           </SucursalProvider>

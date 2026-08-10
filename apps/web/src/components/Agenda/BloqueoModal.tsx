@@ -95,7 +95,7 @@ export default function BloqueoModal({ empleadas, onClose }: Props) {
       end = start
     }
 
-    let current = parseLocal(fecha)
+    const current = parseLocal(fecha)
     while (current <= end) {
       const dayNum = current.getDay() // correcto: usa hora local
 

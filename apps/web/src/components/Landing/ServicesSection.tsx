@@ -80,6 +80,8 @@ export default function ServicesSection() {
   )
   const [categories, setCategories] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 880)
@@ -89,16 +91,23 @@ export default function ServicesSection() {
 
   useEffect(() => {
     async function loadCategories() {
-      const { data } = await supabase
+      setLoading(true)
+      setError(null)
+      const { data, error: queryError } = await supabase
         .from('categorias_servicio')
         .select('id, nombre, descripcion, imagen_url, orden')
         .eq('activo', true)
         .order('orden')
-      setCategories(data || [])
+      if (queryError) {
+        setCategories([])
+        setError('No pudimos cargar los servicios en este momento.')
+      } else {
+        setCategories(data || [])
+      }
       setLoading(false)
     }
     loadCategories()
-  }, [])
+  }, [reloadKey])
 
   return (
     <section id="services" style={{ background: '#ffffff', padding: isMobile ? '60px 16px' : '120px 40px', overflow: 'hidden' }}>
@@ -122,6 +131,17 @@ export default function ServicesSection() {
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px 0', color: '#888' }}>
             Cargando servicios...
+          </div>
+        ) : error ? (
+          <div role="alert" style={{ textAlign: 'center', padding: '40px 0', color: '#6e6e73' }}>
+            <p style={{ marginBottom: 16 }}>{error}</p>
+            <button onClick={() => setReloadKey(key => key + 1)} style={{ border: 0, borderRadius: 20, padding: '10px 20px', background: '#1d1d1f', color: '#fff', cursor: 'pointer' }}>
+              Reintentar
+            </button>
+          </div>
+        ) : categories.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px 0', color: '#6e6e73' }}>
+            El catálogo estará disponible próximamente.
           </div>
         ) : (
           <div style={{ 
