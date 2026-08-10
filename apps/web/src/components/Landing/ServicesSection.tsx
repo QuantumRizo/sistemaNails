@@ -19,6 +19,10 @@ const LANDING_SERVICES = LANDING_ORDER.map(slug =>
   FAMILIES_DATA.find(family => family.slug === slug)
 ).filter((family): family is FamilyData => Boolean(family))
 
+function serviceImage(slug: string, width: 640 | 1200) {
+  return `/services/${slug}-${width}.webp`
+}
+
 function ServiceCard({ family, index }: { family: FamilyData; index: number }) {
   const [visible, setVisible] = useState(false)
   const ref = useRef<HTMLAnchorElement>(null)
@@ -48,9 +52,12 @@ function ServiceCard({ family, index }: { family: FamilyData; index: number }) {
     >
       <img
         className="service-showcase-image"
-        src={family.image}
+        src={serviceImage(family.slug, 1200)}
+        srcSet={`${serviceImage(family.slug, 640)} 640w, ${serviceImage(family.slug, 1200)} 1200w`}
+        sizes="(max-width: 680px) 100vw, (max-width: 1020px) 50vw, 33vw"
         alt=""
-        loading="lazy"
+        loading={index < 3 ? 'eager' : 'lazy'}
+        fetchPriority={index < 3 ? 'high' : 'low'}
         decoding="async"
       />
       <div className="service-showcase-shade" />
